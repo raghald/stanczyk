@@ -56,7 +56,10 @@ function buildMenu(recent = []) {
       { role: 'cut', label: 'Wytnij' }, { role: 'copy', label: 'Kopiuj' }, { role: 'paste', label: 'Wklej' }, { role: 'selectAll', label: 'Zaznacz wszystko' }] },
     { label: 'Widok', submenu: [
       { role: 'reload', label: 'Odśwież' }, { role: 'toggleDevTools', label: 'Narzędzia deweloperskie' }, { type: 'separator' },
-      { role: 'resetZoom', label: 'Rzeczywisty rozmiar' }, { role: 'zoomIn', label: 'Powiększ' }, { role: 'zoomOut', label: 'Pomniejsz' },
+      { label: 'Powiększ podgląd', accelerator: 'CmdOrCtrl+=', click: () => send('zoomIn') },
+      { label: 'Pomniejsz podgląd', accelerator: 'CmdOrCtrl+-', click: () => send('zoomOut') },
+      { label: 'Dopasuj podgląd do okna', accelerator: 'CmdOrCtrl+0', click: () => send('zoomFit') },
+      { label: 'Podgląd 100 %', accelerator: 'CmdOrCtrl+1', click: () => send('zoom100') },
       { type: 'separator' }, { role: 'togglefullscreen', label: 'Pełny ekran' }] },
     { role: 'windowMenu', label: 'Okno' }
   ];

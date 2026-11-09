@@ -100,7 +100,14 @@ md-icon svg{width:100%;height:100%;fill:currentColor;display:block}
 .frame-actions{display:flex;gap:8px}
 .sublabel{margin:0 0 -8px;font:500 12px/16px var(--font-ui);letter-spacing:.5px;color:var(--md-sys-color-on-surface-variant)}
 .canvas-wrap{position:relative;flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
-#cv{display:block;background:#000;border-radius:4px;box-shadow:var(--elev-3);touch-action:none}
+#cv{position:absolute;left:0;top:0;display:block;background:#000;border-radius:4px;box-shadow:var(--elev-3);touch-action:none}
+.canvas-wrap.panning,.canvas-wrap.panning #cv{cursor:grabbing}
+.zoombar{position:absolute;right:12px;bottom:12px;z-index:3;display:flex;align-items:center;gap:2px;padding:4px;border-radius:24px;background:var(--md-sys-color-surface-container-high);box-shadow:var(--elev-2)}
+.zoombar button{position:relative;display:grid;place-items:center;min-width:36px;height:36px;padding:0 8px;border:0;border-radius:18px;background:none;color:var(--md-sys-color-on-surface-variant);cursor:pointer;outline:none}
+.zoombar button:hover{color:var(--md-sys-color-on-surface)}
+.zoombar button md-icon{--md-icon-size:20px}
+.zoombar .zl{min-width:60px;font:500 12px/16px var(--font-mono);letter-spacing:.3px;color:var(--md-sys-color-on-surface)}
+.zoombar .zfit.on{background:var(--md-sys-color-secondary-container);color:var(--md-sys-color-on-secondary-container)}
 .ring{position:absolute;border:1.5px dashed var(--md-sys-color-primary);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%)}
 .drop{position:absolute;inset:0;display:grid;place-items:center;border:2px dashed var(--md-sys-color-primary);border-radius:16px;background:color-mix(in srgb,var(--md-sys-color-surface) 85%,transparent);color:var(--md-sys-color-on-surface);font:400 22px/28px var(--font-ui);pointer-events:none}
 .transport{display:flex;align-items:center;gap:4px;font:500 12px/16px var(--font-mono);letter-spacing:.5px;color:var(--md-sys-color-on-surface-variant)}
@@ -267,6 +274,7 @@ md-outlined-select{width:100%;min-width:0}
   <main class="stage">
     <div class="canvas-wrap" id="wrap">
       <canvas id="cv" width="1080" height="1350"></canvas>
+      <div class="zoombar" id="zoombar" role="toolbar" aria-label="Powiększenie podglądu"></div>
       <div class="ring" id="ring" hidden></div>
       <div class="imgbox" id="imgbox" hidden></div>
       <div class="regbox" id="regbox" hidden><span class="tag" id="regtag"></span><i class="h" data-d="nw"></i><i class="h" data-d="n"></i><i class="h" data-d="ne"></i><i class="h" data-d="e"></i><i class="h" data-d="se"></i><i class="h" data-d="s"></i><i class="h" data-d="sw"></i><i class="h" data-d="w"></i></div>
@@ -279,7 +287,7 @@ md-outlined-select{width:100%;min-width:0}
     </div>
     <div class="status" id="status">
       <span class="hud" id="hud"></span>
-      <span class="hint">Upuść plik na podgląd, aby podmienić źródło · spacja: pauza · dwuklik na suwaku: wartość domyślna</span>
+      <span class="hint">Upuść plik na podgląd · spacja: pauza · ⌘/Ctrl + kółko: zoom · przewijanie: przesuwanie podglądu</span>
     </div>
   </main>
 
@@ -1051,7 +1059,7 @@ let toastT = 0;
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3200); }
 function setRangeFill(){}
 
-const ICONS = {"category": "m261-526 220-354 220 354H261ZM706-80q-74 0-124-50t-50-124q0-74 50-124t124-50q74 0 124 50t50 124q0 74-50 124T706-80Zm-586-25v-304h304v304H120Zm586.08-35Q754-140 787-173.08q33-33.09 33-81Q820-302 786.92-335q-33.09-33-81-33Q658-368 625-334.92q-33 33.09-33 81Q592-206 625.08-173q33.09 33 81 33ZM180-165h184v-184H180v184Zm189-421h224L481-767 369-586Zm112 0ZM364-349Zm342 95Z", "grain": "M229.91-160q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm-170-165q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm-500-170q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm-170-165q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Z", "palette": "M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-85 32-158t87.5-127q55.5-54 130-84.5T489-880q79 0 150 26.5T763.5-780q53.5 47 85 111.5T880-527q0 108-63 170.5T650-294h-75q-18 0-31 14t-13 31q0 27 14.5 46t14.5 44q0 38-21 58.5T480-80Zm0-400Zm-198 11q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15Zm126-170q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15Zm214 0q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15Zm131 170q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15ZM480-140q11 0 15.5-4.5T500-159q0-14-14.5-26T471-238q0-46 30-81t76-35h73q76 0 123-44.5T820-527q0-132-100-212.5T489-820q-146 0-247.5 98.5T140-480q0 141 99.5 240.5T480-140Z", "flare": "M40-450v-60h232v60H40Zm271-157-80-80 42-42 80 80-42 42Zm139-81v-232h60v232h-60Zm199 81-42-42 80-80 42 42-80 80Zm39 157v-60h232v60H688Zm-280.5 42.5Q378-437 378-480t29.5-72.5Q437-582 480-582t72.5 29.5Q582-523 582-480t-29.5 72.5Q523-378 480-378t-72.5-29.5ZM692-226l-85-85 42-42 85 85-42 42Zm-424 0-42-42 85-85 42 42-85 85ZM450-40v-232h60v232h-60Z", "upload": "M450-313v-371L330-564l-43-43 193-193 193 193-43 43-120-120v371h-60ZM220-160q-24 0-42-18t-18-42v-143h60v143h520v-143h60v143q0 24-18 42t-42 18H220Z", "image": "M180-120q-24 0-42-18t-18-42v-600q0-24 18-42t42-18h600q24 0 42 18t18 42v600q0 24-18 42t-42 18H180Zm0-60h600v-600H180v600Zm56-97h489L578-473 446-302l-93-127-117 152Zm-56 97v-600 600Z", "record": "M282.5-282.5Q200-365 200-480t82.5-197.5Q365-760 480-760t197.5 82.5Q760-595 760-480t-82.5 197.5Q595-200 480-200t-197.5-82.5Z", "stop": "M240-240v-480h480v480H240Z", "pause": "M555-200v-560h175v560H555Zm-325 0v-560h175v560H230Z", "play": "M320-203v-560l440 280-440 280Z", "down": "M480-344 240-584l43-43 197 197 197-197 43 43-240 240Z", "close": "m249-207-42-42 231-231-231-231 42-42 231 231 231-231 42 42-231 231 231 231-42 42-231-231-231 231Z", "add": "M450-450H200v-60h250v-250h60v250h250v60H510v250h-60v-250Z", "check": "M378-246 154-470l43-43 181 181 384-384 43 43-427 427Z", "movie": "m140-800 74 152h130l-74-152h89l74 152h130l-74-152h89l74 152h130l-74-152h112q24 0 42 18t18 42v520q0 24-18 42t-42 18H140q-24 0-42-18t-18-42v-520q0-24 18-42t42-18Zm0 212v368h680v-368H140Zm0 0v368-368Z", "photos": "M345-377h391L609-548 506-413l-68-87-93 123Zm-85 177q-24 0-42-18t-18-42v-560q0-24 18-42t42-18h560q24 0 42 18t18 42v560q0 24-18 42t-42 18H260Zm0-60h560v-560H260v560ZM140-80q-24 0-42-18t-18-42v-620h60v620h620v60H140Zm120-740v560-560Z"};
+const ICONS = {"remove": "M200-450v-60h560v60H200Z", "fit_screen": "M820-610v-130H690v-60h130q24 0 42 18t18 42v130h-60Zm-740 0v-130q0-24 18-42t42-18h130v60H140v130H80Zm610 450v-60h130v-130h60v130q0 24-18 42t-42 18H690Zm-550 0q-24 0-42-18t-18-42v-130h60v130h130v60H140Zm60-120v-400h560v400H200Zm60-60h440v-280H260v280Zm0 0v-280 280Z", "category": "m261-526 220-354 220 354H261ZM706-80q-74 0-124-50t-50-124q0-74 50-124t124-50q74 0 124 50t50 124q0 74-50 124T706-80Zm-586-25v-304h304v304H120Zm586.08-35Q754-140 787-173.08q33-33.09 33-81Q820-302 786.92-335q-33.09-33-81-33Q658-368 625-334.92q-33 33.09-33 81Q592-206 625.08-173q33.09 33 81 33ZM180-165h184v-184H180v184Zm189-421h224L481-767 369-586Zm112 0ZM364-349Zm342 95Z", "grain": "M229.91-160q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm-170-165q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm-500-170q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm-170-165q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Z", "palette": "M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-85 32-158t87.5-127q55.5-54 130-84.5T489-880q79 0 150 26.5T763.5-780q53.5 47 85 111.5T880-527q0 108-63 170.5T650-294h-75q-18 0-31 14t-13 31q0 27 14.5 46t14.5 44q0 38-21 58.5T480-80Zm0-400Zm-198 11q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15Zm126-170q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15Zm214 0q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15Zm131 170q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15ZM480-140q11 0 15.5-4.5T500-159q0-14-14.5-26T471-238q0-46 30-81t76-35h73q76 0 123-44.5T820-527q0-132-100-212.5T489-820q-146 0-247.5 98.5T140-480q0 141 99.5 240.5T480-140Z", "flare": "M40-450v-60h232v60H40Zm271-157-80-80 42-42 80 80-42 42Zm139-81v-232h60v232h-60Zm199 81-42-42 80-80 42 42-80 80Zm39 157v-60h232v60H688Zm-280.5 42.5Q378-437 378-480t29.5-72.5Q437-582 480-582t72.5 29.5Q582-523 582-480t-29.5 72.5Q523-378 480-378t-72.5-29.5ZM692-226l-85-85 42-42 85 85-42 42Zm-424 0-42-42 85-85 42 42-85 85ZM450-40v-232h60v232h-60Z", "upload": "M450-313v-371L330-564l-43-43 193-193 193 193-43 43-120-120v371h-60ZM220-160q-24 0-42-18t-18-42v-143h60v143h520v-143h60v143q0 24-18 42t-42 18H220Z", "image": "M180-120q-24 0-42-18t-18-42v-600q0-24 18-42t42-18h600q24 0 42 18t18 42v600q0 24-18 42t-42 18H180Zm0-60h600v-600H180v600Zm56-97h489L578-473 446-302l-93-127-117 152Zm-56 97v-600 600Z", "record": "M282.5-282.5Q200-365 200-480t82.5-197.5Q365-760 480-760t197.5 82.5Q760-595 760-480t-82.5 197.5Q595-200 480-200t-197.5-82.5Z", "stop": "M240-240v-480h480v480H240Z", "pause": "M555-200v-560h175v560H555Zm-325 0v-560h175v560H230Z", "play": "M320-203v-560l440 280-440 280Z", "down": "M480-344 240-584l43-43 197 197 197-197 43 43-240 240Z", "close": "m249-207-42-42 231-231-231-231 42-42 231 231 231-231 42 42-231 231 231 231-42 42-231-231-231 231Z", "add": "M450-450H200v-60h250v-250h60v250h250v60H510v250h-60v-250Z", "check": "M378-246 154-470l43-43 181 181 384-384 43 43-427 427Z", "movie": "m140-800 74 152h130l-74-152h89l74 152h130l-74-152h89l74 152h130l-74-152h112q24 0 42 18t18 42v520q0 24-18 42t-42 18H140q-24 0-42-18t-18-42v-520q0-24 18-42t42-18Zm0 212v368h680v-368H140Zm0 0v368-368Z", "photos": "M345-377h391L609-548 506-413l-68-87-93 123Zm-85 177q-24 0-42-18t-18-42v-560q0-24 18-42t42-18h560q24 0 42 18t18 42v560q0 24-18 42t-42 18H260Zm0-60h560v-560H260v560ZM140-80q-24 0-42-18t-18-42v-620h60v620h620v60H140Zm120-740v560-560Z"};
 const icon = (n, attrs = '') => `<md-icon aria-hidden="true"${attrs ? ' ' + attrs : ''}><svg viewBox="0 -960 960 960"><path d="${ICONS[n]}"/></svg></md-icon>`;
 const SHAPES = [
   ['circle', 'Koło', '<circle cx="9" cy="9" r="6" fill="currentColor"/>'],
@@ -1588,15 +1596,79 @@ cv.addEventListener('pointerdown', pointer);
 cv.addEventListener('pointerleave', () => { mouse.active = false; ring.hidden = true; });
 
 /* ================= Dopasowanie płótna ================= */
+/* Widok podglądu: dopasowanie do okna albo zoom (skala = piksele ekranu na piksel płótna) */
+const view = {fit:true, scale:1, x:0, y:0, s:1};
+const ZMIN = 0.05, ZMAX = 8;
+function fitScale(){ const r = $('#wrap').getBoundingClientRect(); return Math.min(r.width / W, r.height / H); }
 function fitCanvas(){
   const wrap = $('#wrap'), r = wrap.getBoundingClientRect();
   if (!r.width || !r.height) return;
-  const k = Math.min(r.width / W, r.height / H);
-  const w = Math.floor(W * k), h = Math.floor(H * k);
-  cv.style.width = w + 'px'; cv.style.height = h + 'px';
-  $('#transport').style.width = w + 'px'; $('#status').style.width = Math.max(w, 280) + 'px';
+  const s = view.fit ? fitScale() : view.scale, w = W * s, h = H * s, M = 48;
+  let x, y;
+  if (view.fit) { x = (r.width - w) / 2; y = (r.height - h) / 2; }
+  else {
+    x = w <= r.width ? (r.width - w) / 2 : Math.min(M, Math.max(r.width - w - M, view.x));
+    y = h <= r.height ? (r.height - h) / 2 : Math.min(M, Math.max(r.height - h - M, view.y));
+  }
+  view.x = x; view.y = y; view.s = s;
+  Object.assign(cv.style, {width:w + 'px', height:h + 'px', left:x + 'px', top:y + 'px'});
+  const sw2 = Math.min(w, r.width);
+  $('#transport').style.width = sw2 + 'px'; $('#status').style.width = Math.max(sw2, 280) + 'px';
+  updateZoomBar();
   if (editFrame) updateImgBox();
   if (editRegion) updateRegBox();
+}
+function zoomTo(ns, cx, cy){
+  const r = $('#wrap').getBoundingClientRect();
+  if (cx == null) { cx = r.width / 2; cy = r.height / 2; }
+  const s = view.s, u = (cx - view.x) / s, v = (cy - view.y) / s;
+  ns = Math.min(ZMAX, Math.max(ZMIN, ns));
+  view.fit = false; view.scale = ns; view.x = cx - u * ns; view.y = cy - v * ns;
+  fitCanvas();
+}
+function zoomFit(){ view.fit = true; fitCanvas(); }
+function zoomStep(dir){ const steps = [0.05, 0.1, 0.15, 0.25, 0.33, 0.5, 0.67, 0.75, 1, 1.25, 1.5, 2, 3, 4, 6, 8], s = view.s;
+  const n = dir > 0 ? steps.find(x => x > s * 1.01) : [...steps].reverse().find(x => x < s * 0.99); zoomTo(n || s); }
+function updateZoomBar(){
+  const zb = $('#zoombar'); if (!zb.firstChild) return;
+  zb.querySelector('.zl').textContent = Math.round(view.s * 100) + ' %';
+  zb.querySelector('.zfit').classList.toggle('on', view.fit);
+}
+{
+  const zb = $('#zoombar');
+  zb.innerHTML = `<button type="button" class="zout" title="Pomniejsz (⌘−)" aria-label="Pomniejsz podgląd"><md-ripple></md-ripple>${icon('remove')}</button>
+    <button type="button" class="zl" title="Przełącz: dopasuj / 100 %" aria-label="Powiększenie podglądu"><md-ripple></md-ripple>100 %</button>
+    <button type="button" class="zin" title="Powiększ (⌘=)" aria-label="Powiększ podgląd"><md-ripple></md-ripple>${icon('add')}</button>
+    <button type="button" class="zfit" title="Dopasuj do okna (⌘0)" aria-label="Dopasuj podgląd do okna"><md-ripple></md-ripple>${icon('fit_screen')}</button>`;
+  zb.querySelector('.zout').addEventListener('click', () => zoomStep(-1));
+  zb.querySelector('.zin').addEventListener('click', () => zoomStep(1));
+  zb.querySelector('.zfit').addEventListener('click', zoomFit);
+  zb.querySelector('.zl').addEventListener('click', () => view.fit ? zoomTo(1) : zoomFit());
+  const wrap = $('#wrap');
+  // ⌘/Ctrl + kółko (i szczypanie na gładziku) = zoom w miejscu kursora; samo kółko = przesuwanie powiększonego podglądu
+  wrap.addEventListener('wheel', e => {
+    if (e.defaultPrevented) return;
+    const r = wrap.getBoundingClientRect();
+    if (e.ctrlKey || e.metaKey) { e.preventDefault(); zoomTo(view.s * Math.exp(-e.deltaY * (e.deltaMode ? 0.05 : 0.0025) * (e.ctrlKey && !e.metaKey && Math.abs(e.deltaY) < 50 ? 4 : 1)), e.clientX - r.left, e.clientY - r.top); return; }
+    if (view.fit) return;
+    e.preventDefault(); view.x -= e.deltaX; view.y -= e.deltaY; fitCanvas();
+  }, {passive:false});
+  // przesuwanie środkowym przyciskiem myszy
+  let pan = null;
+  wrap.addEventListener('pointerdown', e => { if (e.button !== 1) return; e.preventDefault(); pan = {x:e.clientX, y:e.clientY, vx:view.x, vy:view.y}; wrap.classList.add('panning'); try { wrap.setPointerCapture(e.pointerId); } catch (err) {} });
+  wrap.addEventListener('pointermove', e => { if (!pan) return; if (view.fit) { view.fit = false; view.scale = view.s; } view.x = pan.vx + e.clientX - pan.x; view.y = pan.vy + e.clientY - pan.y; fitCanvas(); });
+  const endPan = () => { pan = null; wrap.classList.remove('panning'); };
+  wrap.addEventListener('pointerup', endPan); wrap.addEventListener('pointercancel', endPan);
+  wrap.addEventListener('auxclick', e => { if (e.button === 1) e.preventDefault(); });
+  // skróty klawiszowe (w przeglądarce; w aplikacji desktopowej robi to menu Widok)
+  addEventListener('keydown', e => {
+    if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+    const k = e.key;
+    if (k === '=' || k === '+') { e.preventDefault(); zoomStep(1); }
+    else if (k === '-' || k === '_') { e.preventDefault(); zoomStep(-1); }
+    else if (k === '0') { e.preventDefault(); zoomFit(); }
+    else if (k === '1') { e.preventDefault(); zoomTo(1); }
+  });
 }
 new ResizeObserver(() => requestAnimationFrame(fitCanvas)).observe($('#wrap'));
 
@@ -1912,6 +1984,10 @@ function initDesktop(){
     else if (a === 'save') saveProject(false);
     else if (a === 'saveAs') saveProject(true);
     else if (a === 'showStart') showStart();
+    else if (a === 'zoomIn') zoomStep(1);
+    else if (a === 'zoomOut') zoomStep(-1);
+    else if (a === 'zoomFit') zoomFit();
+    else if (a === 'zoom100') zoomTo(1);
     else if (a === 'recentChanged') { if (!$('#start').hidden) renderRecent(); }
     else if (a === 'closeRequest') confirmLeave().then(ok => { if (ok) DESK.closeOk(); });
   });
