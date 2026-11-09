@@ -7,7 +7,7 @@ const os = require('os');
 const path = require('path');
 
 module.exports = function smoke(win, app) {
-  const file = path.join(os.tmpdir(), `kropkarnia-smoke-${process.pid}.kropkarnia`);
+  const file = path.join(os.tmpdir(), `stanczyk-smoke-${process.pid}.stanczyk`);
   const errors = [];
   const results = {};
   dialog.showSaveDialog = async () => ({ canceled: false, filePath: file });
@@ -48,7 +48,7 @@ module.exports = function smoke(win, app) {
       results.afterNew = await js(`[document.querySelector('#srcName').textContent, document.querySelector('#projName').textContent]`);
       send('openPath', file); await wait(1500);
       results.afterOpen = await js(`[document.querySelector('#srcName').textContent, document.querySelector('#projName').textContent, document.querySelectorAll('.thumb:not(.add)').length, [...document.querySelectorAll('md-filter-chip')].filter(c => c.selected).map(c => c.label).includes('LED')]`);
-      results.recent = (await js(`window.kropkarniaDesktop.recent()`)).map(r => r.name);
+      results.recent = (await js(`window.stanczykDesktop.recent()`)).map(r => r.name);
       await js(`document.querySelector('#c-cell').value = 20; document.querySelector('#c-cell').dispatchEvent(new Event('input'));`);
       await wait(300);
       results.dirtyBeforeClose = await js(`document.querySelector('#projName').classList.contains('dirty')`);

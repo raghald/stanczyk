@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Kropkarnia</title>
+<title>Stańczyk</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap">
@@ -230,7 +230,7 @@ md-outlined-select{width:100%;min-width:0}
 <body>
 <div class="app">
   <header class="bar">
-    <div class="brand"><span class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Kropkarnia</div>
+    <div class="brand"><span class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Stańczyk</div>
     <span class="projname" id="projName" hidden></span>
     <md-filled-tonal-button id="btnOpen"><md-icon aria-hidden="true" slot="icon"><svg viewBox="0 -960 960 960"><path d="M450-313v-371L330-564l-43-43 193-193 193 193-43 43-120-120v371h-60ZM220-160q-24 0-42-18t-18-42v-143h60v143h520v-143h60v143q0 24-18 42t-42 18H220Z"/></svg></md-icon>Wgraj zdjęcie lub wideo</md-filled-tonal-button>
     <input type="file" id="file" accept="image/*,video/*" multiple hidden>
@@ -297,7 +297,7 @@ md-outlined-select{width:100%;min-width:0}
 <div class="start" id="start" hidden>
   <div class="start-in">
     <div class="start-head">
-      <h1><span class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Kropkarnia</h1>
+      <h1><span class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Stańczyk</h1>
       <div class="start-actions">
         <md-text-button id="stClose">Wróć do edytora</md-text-button>
         <md-outlined-button id="stOpen">Otwórz projekt…</md-outlined-button>
@@ -310,6 +310,7 @@ md-outlined-select{width:100%;min-width:0}
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script src="material.js"></script>
+<script src="default-image.js"></script>
 
 <script>
 (() => {
@@ -342,6 +343,7 @@ const STYLES = {
   ascii:   {shape:'ascii',  map:'none',    angle:0,  scale:1.1,  grid:'square', jitter:0},
 };
 const PRESETS = [
+  ['stanczyk','Stańczyk', {style:'halftone', shape:'circle', map:'size', colorMode:'source', bg:'#0b0907', fg:'#f2e6d8', cell:9, scale:1.45, angle:45, contrast:1.25, bright:0.16, gamma:0.75, blur:0.3, minTone:0.03, anim:'breathe', amp:1.2, freq:35, speed:0.6, glow:0.25}],
   ['kosmos','Kosmos', {style:'dots', ...STYLES.dots, cell:9, contrast:1.5, bg:'#000000', fg:'#ffffff', anim:'flow', amp:3.5, freq:28, speed:0.8, inertia:0.7, trail:0.55, blur:0.5}],
   ['gazeta','Gazeta', {bg:'#f1efe8', fg:'#141414', cell:11, scale:1.32, grain:0.1, anim:'breathe', amp:1.5, freq:40, speed:0.6}],
   ['plakat','Plakat', {bg:'#f5f5f3', fg:'#0b0b0b', cell:24, scale:1.55, angle:30, contrast:1.7, blur:1, grain:0.16, anim:'ripple', amp:0.8, freq:30}],
@@ -354,7 +356,7 @@ const PRESETS = [
   ['duo','Duo',       {bg:'#0c0c0c', fg:'#ff2d6f', fg2:'#ffe8ef', colorMode:'duo', cell:16, angle:15, anim:'vortex', amp:6, freq:40, inertia:0.5}],
 ];
 
-let S = {...DEFAULTS, preset:'kosmos'};
+let S = {...DEFAULTS, preset:'stanczyk'};
 Object.assign(S, PRESETS[0][2]);
 const STORE = 'kropkarnia:v1';
 try { const saved = JSON.parse(localStorage.getItem(STORE) || 'null'); if (saved) S = {...DEFAULTS, ...saved}; } catch (e) {}
@@ -1386,8 +1388,8 @@ $('#btnOpen').addEventListener('click', () => $('#file').click());
 function openFiles(files){
   files = [...files];
   if (!files.length) return;
-  const pf = files.find(f => /\.kropkarnia$/i.test(f.name));
-  if (pf) { if (DESK) openProject(DESK.pathForFile(pf)); else toast('Projekty .kropkarnia otworzysz w aplikacji desktopowej.'); return; }
+  const pf = files.find(f => /\.(stanczyk|kropkarnia)$/i.test(f.name));
+  if (pf) { if (DESK) openProject(DESK.pathForFile(pf)); else toast('Projekty .stanczyk otworzysz w aplikacji desktopowej.'); return; }
   if (files.length > 1) addToSequence(files); else loadFile(files[0]);
 }
 $('#file').addEventListener('change', e => { openFiles(e.target.files); e.target.value = ''; });
@@ -1546,7 +1548,7 @@ const stamp = () => { const d = new Date(), p = n => String(n).padStart(2, '0');
 function download(blob, name){ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 3000); }
 $('#btnPng').addEventListener('click', () => {
   render(lastCount);
-  cv.toBlob(b => { if (!b) { toast('Nie udało się zapisać PNG.'); return; } const n = `kropkarnia-${stamp()}.png`; saveOut(b, n); }, 'image/png');
+  cv.toBlob(b => { if (!b) { toast('Nie udało się zapisać PNG.'); return; } const n = `stanczyk-${stamp()}.png`; saveOut(b, n); }, 'image/png');
 });
 
 let recorder = null, recStart = 0, recTimer = 0, recChunks = [];
@@ -1574,7 +1576,7 @@ async function startRec(){
     const type = recorder.mimeType || mime || 'video/webm';
     const ext = type.includes('mp4') ? 'mp4' : 'webm';
     const blob = new Blob(recChunks, {type});
-    const n = `kropkarnia-${stamp()}.${ext}`; saveOut(blob, n);
+    const n = `stanczyk-${stamp()}.${ext}`; saveOut(blob, n);
     stream.getTracks().forEach(t => t.stop());
     recorder = null; $('#btnRec').classList.remove('recording'); $('#recLabel').textContent = 'Nagraj wideo';
     if (src && src.type === 'video') { src.el.loop = true; src.el.onended = null; if (playing && !seqActive()) src.el.play().catch(() => {}); }
@@ -1592,7 +1594,7 @@ $('#btnRec').addEventListener('click', () => recorder ? stopRec() : startRec());
 /* ================= Eksport do kodu strony ================= */
 // Odtwarzacz osadzany na stronie. Silnik (/*ENGINE*/) wstawiamy z funkcji tej aplikacji,
 // więc animacja na stronie wygląda dokładnie jak podgląd.
-function kropkarniaPlayer(root, CFG){
+function stanczykPlayer(root, CFG){
   'use strict';
   const TAU = Math.PI * 2, S = CFG.S;
   const cv = document.createElement('canvas');
@@ -1671,11 +1673,11 @@ function buildExport(o){
   s.mouse = o.mouse ? (S.mouse === 'off' ? 'repel' : S.mouse) : 'off';
   const cfg = {S:s, W, H, images, sh:[VS_PTS, FS_PTS, VS_FULL, FS_FULL, FS_TEX], alt: images.length >= 2 ? `Animacja: sekwencja ${images.length} zdjęć` : 'Animacja z kropek'};
   const engine = Object.entries(ENGINE).map(([n, f]) => `var ${n} = ${f.toString()};`).join('\n  ');
-  const player = kropkarniaPlayer.toString().replace('/*ENGINE*/', engine);
+  const player = stanczykPlayer.toString().replace('/*ENGINE*/', engine);
   const json = JSON.stringify(cfg).replace(/<\//g, '<\\/');
   const what = images.length >= 2 ? `sekwencja ${images.length} zdjęć, przejście ${((SEQ_TYPES.find(t => t[0] === S.seqType) || [, S.seqType])[1]).toLowerCase()}` : 'jedno zdjęcie';
-  return `<!-- Kropkarnia: animacja (${what}). Wklej w miejscu strony, gdzie ma się pojawić; szerokość dopasuje się do kontenera. -->
-<div class="kropkarnia" style="position:relative;width:100%;aspect-ratio:${W} / ${H};background:${S.bg};overflow:hidden"></div>
+  return `<!-- Stańczyk: animacja (${what}). Wklej w miejscu strony, gdzie ma się pojawić; szerokość dopasuje się do kontenera. -->
+<div class="stanczyk" style="position:relative;width:100%;aspect-ratio:${W} / ${H};background:${S.bg};overflow:hidden"></div>
 <script>
 (${player})(document.currentScript.previousElementSibling, ${json});
 </` + `script>`;
@@ -1713,16 +1715,25 @@ $('#exCopy').addEventListener('click', () => {
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(() => toast('Skopiowano kod. Wklej go na swojej stronie.'), fallback); else fallback();
 });
 $('#exFile').addEventListener('click', () => {
-  const html = `<!doctype html>\n<html lang="pl">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>Kropkarnia — animacja</title>\n<style>html,body{margin:0;background:${S.bg}}main{max-width:1080px;margin:0 auto}</style>\n</head>\n<body>\n<main>\n${$('#exCode').value}\n</main>\n</body>\n</html>\n`;
-  const n = `kropkarnia-animacja-${stamp()}.html`; saveOut(new Blob([html], {type:'text/html'}), n);
+  const html = `<!doctype html>\n<html lang="pl">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>Stańczyk — animacja</title>\n<style>html,body{margin:0;background:${S.bg}}main{max-width:1080px;margin:0 auto}</style>\n</head>\n<body>\n<main>\n${$('#exCode').value}\n</main>\n</body>\n</html>\n`;
+  const n = `stanczyk-animacja-${stamp()}.html`; saveOut(new Blob([html], {type:'text/html'}), n);
 });
 
+/* ================= Domyślny obraz: Jan Matejko, „Stańczyk” (1862) ================= */
+const loadImg = url => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('img')); im.src = url; });
+async function loadDefault(){
+  const d = window.STANCZYK_DEFAULT;
+  try { if (!d) throw new Error('brak'); const im = await loadImg(d.url); setSource(im, 'image', im.naturalWidth, im.naturalHeight, d.name); src.data = d.url; }
+  catch (e) { setSource(makeSample(), 'image', 1080, 1350, 'przyklad-kula.png'); }
+  src.sample = true;
+}
+
 /* ================= Projekty (aplikacja desktopowa) ================= */
-const DESK = window.kropkarniaDesktop || null;
+const DESK = window.stanczykDesktop || null;
 let proj = {path:null, name:'Bez tytułu', dirty:false}, loadingProject = false;
 function markDirty(){ if (!DESK || !booted || loadingProject || proj.dirty) return; proj.dirty = true; updateTitle(); }
 function updateTitle(){
-  document.title = `${proj.name} — Kropkarnia`;
+  document.title = `${proj.name} — Stańczyk`;
   const pn = $('#projName');
   if (pn) { pn.hidden = !DESK; pn.textContent = proj.name; pn.classList.toggle('dirty', proj.dirty); pn.title = proj.path || 'Projekt jeszcze nie jest zapisany'; }
   if (DESK) DESK.setTitle({title:document.title, dirty:proj.dirty, path:proj.path});
@@ -1732,7 +1743,6 @@ async function saveOut(blob, name){
   download(blob, name); toast('Zapisano ' + name);
 }
 const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
-const loadImg = url => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('img')); im.src = url; });
 const loadVid = url => new Promise((res, rej) => { const v = document.createElement('video'); v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto'; v.onloadeddata = () => res(v); v.onerror = () => rej(new Error('video')); v.src = url; });
 // ścieżka z dysku → adres file:// (macOS: /Users/..., Windows: C:\\Users\\...)
 const fileURL = p => { const n = p.replace(/\\/g, '/'); return 'file://' + (n.startsWith('/') ? '' : '/') + n.split('/').map((seg, i) => i === 0 && /^[A-Za-z]:$/.test(seg) ? seg : encodeURIComponent(seg)).join('/'); };
@@ -1753,7 +1763,7 @@ async function serializeProject(name){
     ? {type:'video', name:src.name, path:src.path || null, pos:src.pos}
     : {type:'image', name:src.name, data:await itemData(src), pos:src.pos};
   const sequence = await Promise.all(seq.items.map(async it => ({name:it.name, data:await itemData(it), pos:it.pos})));
-  return {app:'kropkarnia', version:1, name, saved:new Date().toISOString(), settings:{...S}, source, sequence, thumb:projectThumb()};
+  return {app:'stanczyk', version:1, name, saved:new Date().toISOString(), settings:{...S}, source, sequence, thumb:projectThumb()};
 }
 function resetState(){
   setEditFrame(false); setEditRegion(false); if (recorder) stopRec();
@@ -1761,7 +1771,7 @@ function resetState(){
   seq.items = []; seq.sel = null; seq.cur = -1; showT = 0; seqT = 0; morph = null; needClear = true;
 }
 function finishLoad(){ layout(); renderThumbs(); updateSourceInfo(); refreshAll(); save(); }
-const sampleSource = () => { setSource(makeSample(), 'image', 1080, 1350, 'przyklad-kula.png'); src.sample = true; };
+const sampleSource = loadDefault;
 async function confirmLeave(){
   if (!proj.dirty) return true;
   const a = await DESK.confirmUnsaved(proj.name);
@@ -1771,13 +1781,13 @@ async function confirmLeave(){
 async function newProject(){
   if (!(await confirmLeave())) return;
   loadingProject = true;
-  try { resetState(); for (const k of Object.keys(S)) delete S[k]; Object.assign(S, DEFAULTS, PRESETS[0][2], {preset:'kosmos'}); lookVer++; sampleSource(); finishLoad(); }
+  try { resetState(); for (const k of Object.keys(S)) delete S[k]; Object.assign(S, DEFAULTS, PRESETS[0][2], {preset:'stanczyk'}); lookVer++; await sampleSource(); finishLoad(); }
   finally { loadingProject = false; }
   proj = {path:null, name:'Bez tytułu', dirty:false}; updateTitle(); hideStart();
 }
 async function loadProject(text, path, name){
-  let obj; try { obj = JSON.parse(text); } catch (e) { throw new Error('Plik jest uszkodzony albo nie jest projektem Kropkarni.'); }
-  if (!obj || obj.app !== 'kropkarnia') throw new Error('To nie jest plik projektu Kropkarni.');
+  let obj; try { obj = JSON.parse(text); } catch (e) { throw new Error('Plik jest uszkodzony albo nie jest projektem Stańczyka.'); }
+  if (!obj || !['stanczyk', 'kropkarnia'].includes(obj.app)) throw new Error('To nie jest plik projektu Stańczyka.');
   const warns = [];
   loadingProject = true;
   try {
@@ -1787,8 +1797,8 @@ async function loadProject(text, path, name){
     if (so.type === 'image' && so.data) { const im = await loadImg(so.data); setSource(im, 'image', im.naturalWidth, im.naturalHeight, so.name || 'zdjęcie'); src.data = so.data; }
     else if (so.type === 'video' && so.path) {
       try { const v = await loadVid(fileURL(so.path)); setSource(v, 'video', v.videoWidth, v.videoHeight, so.name || 'wideo'); src.path = so.path; }
-      catch (e) { warns.push(`Nie znaleziono wideo „${so.name}” (${so.path}). Wgraj je ponownie.`); sampleSource(); }
-    } else { if (so.type === 'video') warns.push(`Wideo „${so.name}” nie ma zapisanej ścieżki. Wgraj je ponownie.`); sampleSource(); }
+      catch (e) { warns.push(`Nie znaleziono wideo „${so.name}” (${so.path}). Wgraj je ponownie.`); await sampleSource(); }
+    } else { if (so.type === 'video') warns.push(`Wideo „${so.name}” nie ma zapisanej ścieżki. Wgraj je ponownie.`); await sampleSource(); }
     if (so.pos) src.pos = {...so.pos};
     const items = await Promise.all((obj.sequence || []).map(async d => {
       try { const im = await loadImg(d.data); return {el:im, url:d.data, data:d.data, name:d.name, w:im.naturalWidth, h:im.naturalHeight, ver:-1, ok:true, pos:d.pos ? {...d.pos} : {x:0, y:0, z:1}}; }
@@ -1821,7 +1831,7 @@ const fmtDate = ms => new Date(ms).toLocaleString('pl-PL', {day:'numeric', month
 async function renderRecent(){
   const box = $('#recentList'), list = await DESK.recent();
   box.textContent = '';
-  if (!list.length) { box.innerHTML = '<p class="dsub">Tu pojawią się zapisane projekty. Zacznij od nowego projektu albo otwórz plik .kropkarnia.</p>'; return; }
+  if (!list.length) { box.innerHTML = '<p class="dsub">Tu pojawią się zapisane projekty. Zacznij od nowego projektu albo otwórz plik .stanczyk.</p>'; return; }
   for (const r of list) {
     const card = el('div', 'rcard' + (r.missing ? ' missing' : '')); card.tabIndex = 0; card.setAttribute('role', 'button'); card.setAttribute('aria-label', 'Otwórz projekt ' + r.name);
     card.innerHTML = `<md-ripple></md-ripple><div class="rthumb">${r.thumb ? `<img src="${r.thumb}" alt="">` : ''}</div>
@@ -1858,9 +1868,7 @@ function initDesktop(){
 /* ================= Start ================= */
 buildPanel();
 setPlaying(true);
-setSource(makeSample(), 'image', 1080, 1350, 'przyklad-kula.png'); src.sample = true;
-booted = true;
-if (DESK) initDesktop();
+loadDefault().then(() => { booted = true; if (DESK) initDesktop(); });
 requestAnimationFrame(t => { last = t; requestAnimationFrame(frame); });
 })();
 </script>

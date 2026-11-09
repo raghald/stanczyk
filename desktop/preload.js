@@ -1,8 +1,8 @@
 // Bezpieczny most między oknem a systemem plików. Okno nie ma dostępu do Node,
-// widzi tylko te funkcje (window.kropkarniaDesktop).
+// widzi tylko te funkcje (window.stanczykDesktop).
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
-contextBridge.exposeInMainWorld('kropkarniaDesktop', {
+contextBridge.exposeInMainWorld('stanczykDesktop', {
   pathForFile: f => { try { return webUtils.getPathForFile(f) || null; } catch { return null; } },
   chooseSavePath: name => ipcRenderer.invoke('project:choose-save', name),
   writeProject: o => ipcRenderer.invoke('project:write', o),

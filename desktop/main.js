@@ -1,11 +1,12 @@
-// Kropkarnia — proces główny aplikacji desktopowej (Electron).
-// Okno, menu „Plik”, zapis i odczyt projektów .kropkarnia, lista ostatnich projektów.
+// Stańczyk — proces główny aplikacji desktopowej (Electron).
+// Okno, menu „Plik”, zapis i odczyt projektów .stanczyk (oraz starszych .kropkarnia), lista ostatnich projektów.
 const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs/promises');
 
-const EXT = 'kropkarnia';
-const FILTER = [{ name: 'Projekt Kropkarni', extensions: [EXT] }];
+const EXT = 'stanczyk';
+const EXTS = [EXT, 'kropkarnia']; // .kropkarnia — projekty sprzed zmiany nazwy
+const FILTER = [{ name: 'Projekt Stańczyka', extensions: EXTS }];
 let win = null;
 let allowClose = false;
 let pendingOpen = null;
@@ -26,7 +27,7 @@ async function pushRecent(entry) {
   await writeRecent(list.slice(0, 12));
   app.addRecentDocument(entry.path);
 }
-const baseName = p => path.basename(p, '.' + EXT);
+const baseName = p => path.basename(p).replace(/\.(stanczyk|kropkarnia)$/i, '');
 
 /* ---------- menu ---------- */
 const send = (action, arg) => { if (win) win.webContents.send('menu', action, arg); };
@@ -34,9 +35,9 @@ function buildMenu(recent = []) {
   const isMac = process.platform === 'darwin';
   const template = [
     ...(isMac ? [{ label: app.name, submenu: [
-      { role: 'about', label: 'O Kropkarni' }, { type: 'separator' },
-      { role: 'hide', label: 'Ukryj Kropkarnię' }, { role: 'hideOthers', label: 'Ukryj pozostałe' }, { role: 'unhide', label: 'Pokaż wszystko' },
-      { type: 'separator' }, { role: 'quit', label: 'Zakończ Kropkarnię' }] }] : []),
+      { role: 'about', label: 'O Stańczyku' }, { type: 'separator' },
+      { role: 'hide', label: 'Ukryj Stańczyka' }, { role: 'hideOthers', label: 'Ukryj pozostałe' }, { role: 'unhide', label: 'Pokaż wszystko' },
+      { type: 'separator' }, { role: 'quit', label: 'Zakończ Stańczyka' }] }] : []),
     { label: 'Plik', submenu: [
       { label: 'Nowy projekt', accelerator: 'CmdOrCtrl+N', click: () => send('new') },
       { label: 'Otwórz projekt…', accelerator: 'CmdOrCtrl+O', click: () => send('open') },
@@ -66,7 +67,7 @@ function buildMenu(recent = []) {
 function createWindow() {
   win = new BrowserWindow({
     width: 1440, height: 960, minWidth: 900, minHeight: 640,
-    backgroundColor: '#0E0F11', title: 'Kropkarnia', show: false,
+    backgroundColor: '#0E0F11', title: 'Stańczyk', show: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
   win.loadFile(path.join(__dirname, '..', 'index.html'));
@@ -75,7 +76,7 @@ function createWindow() {
   win.on('closed', () => { win = null; allowClose = false; });
   win.webContents.on('did-finish-load', () => { if (pendingOpen) { send('openPath', pendingOpen); pendingOpen = null; } });
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) shell.openExternal(url); return { action: 'deny' }; });
-  if (process.env.KROPKARNIA_SMOKE) require('./smoke')(win, app);
+  if (process.env.STANCZYK_SMOKE) require('./smoke')(win, app);
 }
 
 /* ---------- most z oknem ---------- */
@@ -135,14 +136,14 @@ ipcMain.handle('shell:reveal', (e, p) => shell.showItemInFolder(p));
 
 /* ---------- cykl życia ---------- */
 const openPath = p => { if (win && !win.webContents.isLoading()) { send('openPath', p); if (win.isMinimized()) win.restore(); win.focus(); } else pendingOpen = p; };
-const projectArg = argv => argv.slice(1).find(a => a.toLowerCase().endsWith('.' + EXT));
+const projectArg = argv => argv.slice(1).find(a => EXTS.some(x => a.toLowerCase().endsWith('.' + x)));
 // macOS: dwuklik w Finderze; Windows: ścieżka w argumentach, a kolejne pliki trafiają do już otwartej aplikacji
 app.on('open-file', (e, p) => { e.preventDefault(); openPath(p); });
-if (!process.env.KROPKARNIA_SMOKE && !app.requestSingleInstanceLock()) app.quit();
+if (!process.env.STANCZYK_SMOKE && !app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', (e, argv) => { const p = projectArg(argv); if (p) openPath(p); else if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
 if (process.platform !== 'darwin') { const p = projectArg(process.argv); if (p) pendingOpen = p; }
 app.whenReady().then(async () => {
-  app.setName('Kropkarnia');
+  app.setName('Stańczyk');
   buildMenu(await readRecent());
   createWindow();
   app.on('activate', () => { if (!win) createWindow(); });
