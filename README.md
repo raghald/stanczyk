@@ -4,11 +4,11 @@ Edytor, który zamienia zdjęcia i wideo w animowane obrazy z kropek: halftone, 
 
 ## Uruchomienie
 
-**Aplikacja na Maca:** zbuduj ją raz (patrz niżej) i otwórz `dist/mac-arm64/Kropkarnia.app`. Możesz ją przeciągnąć do folderu Aplikacje.
+**Aplikacja na Maca i Windowsa:** zainstaluj ją z instalatora (patrz „Instalatory” niżej).
 
 **W przeglądarce:** otwórz `index.html` w aktualnej przeglądarce (najlepiej Chrome). Pliki `index.html` i `material.js` muszą leżeć w tym samym folderze. Wersja przeglądarkowa nie ma projektów.
 
-## Projekty (aplikacja na Maca)
+## Projekty (aplikacja desktopowa)
 
 - **Ekran projektów** po uruchomieniu: nowy projekt, otwieranie pliku i lista ostatnich projektów z miniaturami.
 - **Plik → Nowy projekt** (⌘N), **Otwórz projekt…** (⌘O), **Otwórz ostatnie**, **Zapisz** (⌘S), **Zapisz jako…** (⇧⌘S), **Ekran projektów** (⇧⌘P).
@@ -28,20 +28,32 @@ Edytor, który zamienia zdjęcia i wideo w animowane obrazy z kropek: halftone, 
 - **Kadr każdego zdjęcia:** pozycja i skala, także przez przeciąganie na podglądzie.
 - **Eksport:** PNG, nagranie wideo (MP4 w Chrome, WebM w innych przeglądarkach) i „Kod na stronę”, czyli gotowy fragment HTML z animacją do wklejenia na dowolną stronę.
 
-## Budowanie aplikacji na Maca
-
-Potrzebny jest Node.js (wersja 20 lub nowsza).
+## Instalatory
 
 ```bash
 npm install
-npm run build
+npm run dist
 ```
 
-Gotowa aplikacja trafia do `dist/mac-arm64/Kropkarnia.app` (Mac z procesorem Apple). Jest podpisana lokalnie, bez notaryzacji Apple: na tym Macu otwiera się normalnie, a na innym trzeba ją za pierwszym razem otworzyć przez prawy przycisk → Otwórz.
+W folderze `dist/` powstają:
+
+| Plik | System |
+|---|---|
+| `Kropkarnia-1.0.0-mac-arm64.dmg` | macOS, Mac z procesorem Apple (M1 i nowsze) |
+| `Kropkarnia-1.0.0-mac-x64.dmg` | macOS, Mac z procesorem Intel |
+| `Kropkarnia-1.0.0-win-x64-setup.exe` | Windows 10 i 11, 64-bit |
+
+**macOS:** otwórz DMG i przeciągnij Kropkarnię do Aplikacji. Aplikacja jest podpisana tylko lokalnie, bez notaryzacji Apple, więc przy pierwszym uruchomieniu na innym Macu pojawi się ostrzeżenie: kliknij aplikację prawym przyciskiem → Otwórz (na macOS 15 i nowszym: Ustawienia systemowe → Prywatność i ochrona → „Otwórz mimo to”).
+
+**Windows:** uruchom instalator, wybierz folder i zainstaluj. Instalator nie ma podpisu Microsoft, więc SmartScreen pokaże „System Windows ochronił ten komputer”: kliknij „Więcej informacji” → „Uruchom mimo to”. Instalator tworzy skrót na pulpicie i w menu Start oraz kojarzy pliki `.kropkarnia` z aplikacją.
+
+Pozbycie się ostrzeżeń wymaga certyfikatów: Apple Developer ID (notaryzacja) i certyfikatu podpisu kodu dla Windows.
 
 Inne polecenia:
 
-- `npm start` uruchamia aplikację bez budowania paczki.
+- `npm start` uruchamia aplikację bez budowania.
+- `npm run build` szybko buduje samo `Kropkarnia.app` (bez DMG) do `dist/mac-arm64/`.
+- `npm run dist:mac` / `npm run dist:win` budują instalatory tylko dla jednego systemu.
 - `npm run smoke` przechodzi automatyczny scenariusz: sekwencja i preset, zapis projektu, nowy projekt, ponowne otwarcie, zamknięcie z niezapisanymi zmianami.
 
 ## Technologie
@@ -62,5 +74,6 @@ Inne polecenia:
 | `desktop/main.js` | okno, menu, zapis i odczyt projektów, lista ostatnich projektów |
 | `desktop/preload.js` | most między oknem a systemem plików |
 | `desktop/smoke.js` | automatyczny test aplikacji (`npm run smoke`) |
-| `build/` | ikona aplikacji |
+| `build/` | ikony aplikacji (macOS i Windows) |
+| `scripts/after-pack.js` | podpis lokalny aplikacji na Maca przed spakowaniem do DMG |
 | `package.json` | zależności i konfiguracja budowania |

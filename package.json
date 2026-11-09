@@ -9,7 +9,10 @@
   "scripts": {
     "start": "electron .",
     "smoke": "KROPKARNIA_SMOKE=1 electron .",
-    "build": "electron-builder --mac --arm64 && codesign --force --deep --sign - dist/mac-arm64/Kropkarnia.app"
+    "build": "electron-builder --mac --arm64 --dir",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist": "electron-builder --mac --win"
   },
   "devDependencies": {
     "electron": "33.2.1",
@@ -32,18 +35,72 @@
     "mac": {
       "category": "public.app-category.graphics-design",
       "icon": "build/icon.icns",
+      "identity": null,
       "target": [
-        "dir"
-      ],
-      "identity": null
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ]
     },
     "fileAssociations": [
       {
         "ext": "kropkarnia",
         "name": "Projekt Kropkarni",
+        "description": "Projekt Kropkarni",
         "role": "Editor",
-        "icon": "build/icon.icns"
+        "icon": "build/icon"
       }
-    ]
+    ],
+    "afterPack": "scripts/after-pack.js",
+    "artifactName": "Kropkarnia-${version}-${os}-${arch}.${ext}",
+    "dmg": {
+      "title": "Kropkarnia ${version}",
+      "artifactName": "Kropkarnia-${version}-mac-${arch}.${ext}",
+      "contents": [
+        {
+          "x": 150,
+          "y": 190
+        },
+        {
+          "x": 390,
+          "y": 190,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Kropkarnia",
+      "installerLanguages": [
+        "pl_PL"
+      ],
+      "language": "1045",
+      "artifactName": "Kropkarnia-${version}-win-x64-setup.${ext}",
+      "uninstallDisplayName": "Kropkarnia"
+    }
   }
 }

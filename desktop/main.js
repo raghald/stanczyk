@@ -127,18 +127,20 @@ ipcMain.handle('dialog:unsaved', async (e, name) => {
 });
 ipcMain.on('window:title', (e, { title, dirty, path: p }) => {
   if (!win) return;
-  win.setTitle(title);
-  win.setDocumentEdited(!!dirty);
-  win.setRepresentedFilename(p || '');
+  if (process.platform === 'darwin') { win.setTitle(title); win.setDocumentEdited(!!dirty); win.setRepresentedFilename(p || ''); }
+  else win.setTitle((dirty ? '● ' : '') + title);
 });
 ipcMain.on('window:close-ok', () => { if (!win) return; allowClose = true; win.close(); });
 ipcMain.handle('shell:reveal', (e, p) => shell.showItemInFolder(p));
 
 /* ---------- cykl życia ---------- */
-app.on('open-file', (e, p) => {
-  e.preventDefault();
-  if (win && !win.webContents.isLoading()) send('openPath', p); else pendingOpen = p;
-});
+const openPath = p => { if (win && !win.webContents.isLoading()) { send('openPath', p); if (win.isMinimized()) win.restore(); win.focus(); } else pendingOpen = p; };
+const projectArg = argv => argv.slice(1).find(a => a.toLowerCase().endsWith('.' + EXT));
+// macOS: dwuklik w Finderze; Windows: ścieżka w argumentach, a kolejne pliki trafiają do już otwartej aplikacji
+app.on('open-file', (e, p) => { e.preventDefault(); openPath(p); });
+if (!process.env.KROPKARNIA_SMOKE && !app.requestSingleInstanceLock()) app.quit();
+app.on('second-instance', (e, argv) => { const p = projectArg(argv); if (p) openPath(p); else if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
+if (process.platform !== 'darwin') { const p = projectArg(process.argv); if (p) pendingOpen = p; }
 app.whenReady().then(async () => {
   app.setName('Kropkarnia');
   buildMenu(await readRecent());

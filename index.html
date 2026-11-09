@@ -1728,13 +1728,14 @@ function updateTitle(){
   if (DESK) DESK.setTitle({title:document.title, dirty:proj.dirty, path:proj.path});
 }
 async function saveOut(blob, name){
-  if (DESK) { const p = await DESK.saveFile(name, await blob.arrayBuffer()); if (p) toast('Zapisano ' + p.split('/').pop()); return; }
+  if (DESK) { const p = await DESK.saveFile(name, await blob.arrayBuffer()); if (p) toast('Zapisano ' + p.split(/[\\/]/).pop()); return; }
   download(blob, name); toast('Zapisano ' + name);
 }
 const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
 const loadImg = url => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('img')); im.src = url; });
 const loadVid = url => new Promise((res, rej) => { const v = document.createElement('video'); v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto'; v.onloadeddata = () => res(v); v.onerror = () => rej(new Error('video')); v.src = url; });
-const fileURL = p => 'file://' + p.split('/').map(encodeURIComponent).join('/');
+// ścieżka z dysku → adres file:// (macOS: /Users/..., Windows: C:\\Users\\...)
+const fileURL = p => { const n = p.replace(/\\/g, '/'); return 'file://' + (n.startsWith('/') ? '' : '/') + n.split('/').map((seg, i) => i === 0 && /^[A-Za-z]:$/.test(seg) ? seg : encodeURIComponent(seg)).join('/'); };
 async function itemData(it){
   if (it.data) return it.data;
   if (it.blob) return (it.data = await blobToDataURL(it.blob));
