@@ -12,6 +12,7 @@ Otwórz `index.html` w aktualnej przeglądarce (najlepiej Chrome). Pliki `index.
 - **Animacje:** przepływ, wir, fala, fala kolista, oddech, drganie, rozsypka, dryf; bezwładność, smugi, reakcja na kursor.
 - **Sekwencje zdjęć** z przejściami: Rozsypka, Przelot, Wir, Przepływ, Przenikanie. Kropki wędrują z jednego zdjęcia na drugie.
 - **Wejście i wyjście:** obiekt pojawia się z pustego kadru i znika w tych samych stylach.
+- **Efekt LED:** poświata kropek, podświetlone tło, migotanie diod i okno efektu z oryginalnym zdjęciem dookoła (preset „LED”).
 - **Kadr każdego zdjęcia:** pozycja i skala, także przez przeciąganie na podglądzie.
 - **Eksport:** PNG, nagranie wideo (MP4 w Chrome, WebM w innych przeglądarkach) i „Kod na stronę”, czyli gotowy fragment HTML z animacją do wklejenia na dowolną stronę.
 
