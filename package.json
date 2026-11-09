@@ -1,0 +1,49 @@
+{
+  "name": "kropkarnia",
+  "productName": "Kropkarnia",
+  "version": "1.0.0",
+  "description": "Edytor animacji z kropek: halftone, piksele, ASCII, LED",
+  "main": "desktop/main.js",
+  "private": true,
+  "author": "Fryderyk Głowacki",
+  "scripts": {
+    "start": "electron .",
+    "smoke": "KROPKARNIA_SMOKE=1 electron .",
+    "build": "electron-builder --mac --arm64 && codesign --force --deep --sign - dist/mac-arm64/Kropkarnia.app"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "pl.bgs.kropkarnia",
+    "productName": "Kropkarnia",
+    "copyright": "Bilak Głowacki Samborska",
+    "files": [
+      "index.html",
+      "material.js",
+      "desktop/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "mac": {
+      "category": "public.app-category.graphics-design",
+      "icon": "build/icon.icns",
+      "target": [
+        "dir"
+      ],
+      "identity": null
+    },
+    "fileAssociations": [
+      {
+        "ext": "kropkarnia",
+        "name": "Projekt Kropkarni",
+        "role": "Editor",
+        "icon": "build/icon.icns"
+      }
+    ]
+  }
+}

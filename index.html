@@ -178,6 +178,30 @@ md-outlined-select{width:100%;min-width:0}
 .toast{position:fixed;left:50%;bottom:max(24px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);min-width:288px;max-width:min(560px,calc(100vw - 32px));background:var(--md-sys-color-inverse-surface);color:var(--md-sys-color-inverse-on-surface);padding:14px 16px;border-radius:4px;font:400 14px/20px var(--font-ui);letter-spacing:.25px;box-shadow:var(--elev-3);z-index:20}
 
 
+/* projekty (aplikacja desktopowa) */
+.projname{display:none;font:400 14px/20px var(--font-ui);letter-spacing:.25px;color:var(--md-sys-color-on-surface-variant);white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.desktop .projname{display:inline}
+.projname.dirty::after{content:" •";color:var(--md-sys-color-primary)}
+.start{position:fixed;inset:0;z-index:25;background:var(--md-sys-color-surface);overflow:auto;padding:56px max(24px,env(safe-area-inset-left,0px)) 40px max(24px,env(safe-area-inset-right,0px))}
+.start-in{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.start-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.start h1{margin:0;display:flex;align-items:center;gap:16px;font:400 36px/44px var(--font-ui)}
+.start h1 .logo{transform:scale(1.4);transform-origin:left center;margin-right:10px}
+.start-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.start h2{margin:0;font:500 14px/20px var(--font-ui);letter-spacing:.1px;color:var(--md-sys-color-on-surface-variant)}
+.recent{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.rcard{position:relative;display:flex;flex-direction:column;border-radius:12px;background:var(--md-sys-color-surface-container-low);overflow:hidden;cursor:pointer;outline:none}
+.rcard:focus-visible{box-shadow:0 0 0 2px var(--md-sys-color-primary)}
+.rthumb{aspect-ratio:4/5;background:#000}
+.rthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.rmeta{display:flex;flex-direction:column;gap:2px;padding:12px 16px 14px;min-width:0}
+.rmeta b{font:500 16px/24px var(--font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rmeta small{font:400 12px/16px var(--font-ui);letter-spacing:.4px;color:var(--md-sys-color-on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rcard .rx{position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:50%;border:0;padding:6px;background:rgba(0,0,0,.6);color:#fff;opacity:0;cursor:pointer}
+.rcard:hover .rx,.rcard:focus-within .rx{opacity:1}
+.rcard .rx md-icon{--md-icon-size:20px}
+.rcard.missing{opacity:.5}
+
 /* okno eksportu (dialog M3) */
 .scrim{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.6)}
 .dialog{width:min(680px,100%);max-height:calc(100vh - 32px);overflow:auto;display:flex;flex-direction:column;gap:16px;padding:24px;border-radius:28px;background:var(--md-sys-color-surface-container-high);color:var(--md-sys-color-on-surface);box-shadow:var(--elev-3)}
@@ -207,6 +231,7 @@ md-outlined-select{width:100%;min-width:0}
 <div class="app">
   <header class="bar">
     <div class="brand"><span class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Kropkarnia</div>
+    <span class="projname" id="projName" hidden></span>
     <md-filled-tonal-button id="btnOpen"><md-icon aria-hidden="true" slot="icon"><svg viewBox="0 -960 960 960"><path d="M450-313v-371L330-564l-43-43 193-193 193 193-43 43-120-120v371h-60ZM220-160q-24 0-42-18t-18-42v-143h60v143h520v-143h60v143q0 24-18 42t-42 18H220Z"/></svg></md-icon>Wgraj zdjęcie lub wideo</md-filled-tonal-button>
     <input type="file" id="file" accept="image/*,video/*" multiple hidden>
     <input type="file" id="seqFile" accept="image/*" multiple hidden>
@@ -269,6 +294,20 @@ md-outlined-select{width:100%;min-width:0}
     </div>
   </div>
 </div>
+<div class="start" id="start" hidden>
+  <div class="start-in">
+    <div class="start-head">
+      <h1><span class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Kropkarnia</h1>
+      <div class="start-actions">
+        <md-text-button id="stClose">Wróć do edytora</md-text-button>
+        <md-outlined-button id="stOpen">Otwórz projekt…</md-outlined-button>
+        <md-filled-button id="stNew">Nowy projekt</md-filled-button>
+      </div>
+    </div>
+    <h2>Ostatnie projekty</h2>
+    <div class="recent" id="recentList"></div>
+  </div>
+</div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script src="material.js"></script>
 
@@ -322,7 +361,7 @@ try { const saved = JSON.parse(localStorage.getItem(STORE) || 'null'); if (saved
 let openSections = {};
 try { openSections = JSON.parse(localStorage.getItem(STORE + ':sections') || '{}'); } catch (e) {}
 let saveT = 0;
-function save(){ clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} }, 300); }
+function save(){ if (typeof markDirty === 'function') markDirty(); clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} }, 300); }
 
 /* ================= Szum Perlina ================= */
 const P = new Uint8Array(512);
@@ -750,7 +789,7 @@ function addToSequence(files){
   const wasActive = seqActive();
   imgs.forEach(f => {
     const url = URL.createObjectURL(f), im = new Image();
-    const item = {el:im, url, name:f.name, w:0, h:0, ver:-1, ok:false, pos:{x:0, y:0, z:1}};
+    const item = {el:im, url, name:f.name, w:0, h:0, ver:-1, ok:false, pos:{x:0, y:0, z:1}, blob:f};
     seq.items.push(item);
     im.onload = () => { item.w = im.naturalWidth; item.h = im.naturalHeight; item.ok = true; if (--left === 0) seqLoaded(wasActive); };
     im.onerror = () => { seq.items.splice(seq.items.indexOf(item), 1); URL.revokeObjectURL(url); if (--left === 0) seqLoaded(wasActive); };
@@ -1252,7 +1291,7 @@ function renderThumbs(){
     t.addEventListener('dragover', e => { if (dragFrom < 0) return; e.preventDefault(); t.classList.add('dragover'); });
     t.addEventListener('dragleave', () => t.classList.remove('dragover'));
     t.addEventListener('drop', e => { if (dragFrom < 0) return; e.preventDefault(); e.stopPropagation(); t.classList.remove('dragover');
-      const [m] = seq.items.splice(dragFrom, 1); seq.items.splice(i, 0, m); seq.sel = null; dragFrom = -1; morph = null; seq.cur = -1; layout(); renderThumbs(); });
+      const [m] = seq.items.splice(dragFrom, 1); seq.items.splice(i, 0, m); seq.sel = null; markDirty(); dragFrom = -1; morph = null; seq.cur = -1; layout(); renderThumbs(); });
     t.addEventListener('dragend', () => { dragFrom = -1; });
     thumbsBox.appendChild(t);
   });
@@ -1263,7 +1302,7 @@ function renderThumbs(){
 }
 function markThumbs(){ if (frameCtl) frameCtl.refresh(); if (editFrame) updateImgBox(); if (!thumbsBox) return; [...thumbsBox.children].forEach((t, i) => t.classList.toggle('current', seqActive() && i === seq.cur)); }
 function removeItem(i){
-  const [it] = seq.items.splice(i, 1); if (it) URL.revokeObjectURL(it.url); seq.sel = null;
+  const [it] = seq.items.splice(i, 1); if (it && it.url.startsWith('blob:')) URL.revokeObjectURL(it.url); seq.sel = null; markDirty();
   morph = null; seq.cur = -1; seqT = Math.min(seqT, Math.max(0, seqSpan() - 0.001));
   layout(); renderThumbs(); updateSourceInfo(); refreshAll();
 }
@@ -1321,7 +1360,7 @@ function setSource(elm, type, w, h, name){
   lastVideoTime = -1; sampleDirty = true;
   if (seqActive() && booted) { S.seqOn = false; toast('Sekwencja wstrzymana. Włączysz ją ponownie w sekcji „Sekwencja zdjęć”.'); markThumbs(); }
   if (type === 'video' && playing && !seqActive()) elm.play().catch(() => {});
-  layout(); updateSourceInfo(); refreshAll();
+  layout(); updateSourceInfo(); refreshAll(); markDirty();
 }
 let booted = false;
 function loadFile(f){
@@ -1333,12 +1372,12 @@ function loadFile(f){
   const done = () => { if (objectURL) URL.revokeObjectURL(objectURL); objectURL = url; };
   if (isVid) {
     const v = document.createElement('video'); v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto';
-    v.onloadeddata = () => { done(); setSource(v, 'video', v.videoWidth, v.videoHeight, f.name); };
+    v.onloadeddata = () => { done(); setSource(v, 'video', v.videoWidth, v.videoHeight, f.name); src.path = DESK ? DESK.pathForFile(f) : null; };
     v.onerror = () => { URL.revokeObjectURL(url); toast('Nie udało się otworzyć wideo. Spróbuj pliku MP4 (H.264) lub WebM.'); };
     v.src = url;
   } else {
     const im = new Image();
-    im.onload = () => { done(); setSource(im, 'image', im.naturalWidth, im.naturalHeight, f.name); };
+    im.onload = () => { done(); setSource(im, 'image', im.naturalWidth, im.naturalHeight, f.name); src.blob = f; };
     im.onerror = () => { URL.revokeObjectURL(url); toast('Nie udało się otworzyć zdjęcia. Spróbuj pliku JPG lub PNG.'); };
     im.src = url;
   }
@@ -1347,6 +1386,8 @@ $('#btnOpen').addEventListener('click', () => $('#file').click());
 function openFiles(files){
   files = [...files];
   if (!files.length) return;
+  const pf = files.find(f => /\.kropkarnia$/i.test(f.name));
+  if (pf) { if (DESK) openProject(DESK.pathForFile(pf)); else toast('Projekty .kropkarnia otworzysz w aplikacji desktopowej.'); return; }
   if (files.length > 1) addToSequence(files); else loadFile(files[0]);
 }
 $('#file').addEventListener('change', e => { openFiles(e.target.files); e.target.value = ''; });
@@ -1395,7 +1436,7 @@ function frameChanged(it){
   if (!it.pos) it.pos = {x:0, y:0, z:1};
   it.pv = (it.pv || 0) + 1;
   if (it === src) sampleDirty = true; else it.ver = -1;
-  morph = null; updateImgBox(); if (frameCtl) frameCtl.refresh();
+  morph = null; updateImgBox(); if (frameCtl) frameCtl.refresh(); markDirty();
 }
 function showFrameTarget(){ const t = frameTarget(); if (!t) return; if (t.i >= 0) seqT = t.i * seqCycle() + 0.001; if (showOn()) showT = (S.inType !== 'none' ? S.inDur : 0) + (t.i >= 0 ? seqT : 0.001); morph = null; }
 /* ================= Okno (maska) — edycja na podglądzie ================= */
@@ -1498,14 +1539,14 @@ function fitCanvas(){
   if (editFrame) updateImgBox();
   if (editRegion) updateRegBox();
 }
-new ResizeObserver(fitCanvas).observe($('#wrap'));
+new ResizeObserver(() => requestAnimationFrame(fitCanvas)).observe($('#wrap'));
 
 /* ================= Eksport ================= */
 const stamp = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; };
 function download(blob, name){ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 3000); }
 $('#btnPng').addEventListener('click', () => {
   render(lastCount);
-  cv.toBlob(b => { if (!b) { toast('Nie udało się zapisać PNG.'); return; } const n = `kropkarnia-${stamp()}.png`; download(b, n); toast('Zapisano ' + n); }, 'image/png');
+  cv.toBlob(b => { if (!b) { toast('Nie udało się zapisać PNG.'); return; } const n = `kropkarnia-${stamp()}.png`; saveOut(b, n); }, 'image/png');
 });
 
 let recorder = null, recStart = 0, recTimer = 0, recChunks = [];
@@ -1533,7 +1574,7 @@ async function startRec(){
     const type = recorder.mimeType || mime || 'video/webm';
     const ext = type.includes('mp4') ? 'mp4' : 'webm';
     const blob = new Blob(recChunks, {type});
-    const n = `kropkarnia-${stamp()}.${ext}`; download(blob, n); toast('Zapisano ' + n);
+    const n = `kropkarnia-${stamp()}.${ext}`; saveOut(blob, n);
     stream.getTracks().forEach(t => t.stop());
     recorder = null; $('#btnRec').classList.remove('recording'); $('#recLabel').textContent = 'Nagraj wideo';
     if (src && src.type === 'video') { src.el.loop = true; src.el.onended = null; if (playing && !seqActive()) src.el.play().catch(() => {}); }
@@ -1673,14 +1714,152 @@ $('#exCopy').addEventListener('click', () => {
 });
 $('#exFile').addEventListener('click', () => {
   const html = `<!doctype html>\n<html lang="pl">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>Kropkarnia — animacja</title>\n<style>html,body{margin:0;background:${S.bg}}main{max-width:1080px;margin:0 auto}</style>\n</head>\n<body>\n<main>\n${$('#exCode').value}\n</main>\n</body>\n</html>\n`;
-  const n = `kropkarnia-animacja-${stamp()}.html`; download(new Blob([html], {type:'text/html'}), n); toast('Zapisano ' + n);
+  const n = `kropkarnia-animacja-${stamp()}.html`; saveOut(new Blob([html], {type:'text/html'}), n);
 });
+
+/* ================= Projekty (aplikacja desktopowa) ================= */
+const DESK = window.kropkarniaDesktop || null;
+let proj = {path:null, name:'Bez tytułu', dirty:false}, loadingProject = false;
+function markDirty(){ if (!DESK || !booted || loadingProject || proj.dirty) return; proj.dirty = true; updateTitle(); }
+function updateTitle(){
+  document.title = `${proj.name} — Kropkarnia`;
+  const pn = $('#projName');
+  if (pn) { pn.hidden = !DESK; pn.textContent = proj.name; pn.classList.toggle('dirty', proj.dirty); pn.title = proj.path || 'Projekt jeszcze nie jest zapisany'; }
+  if (DESK) DESK.setTitle({title:document.title, dirty:proj.dirty, path:proj.path});
+}
+async function saveOut(blob, name){
+  if (DESK) { const p = await DESK.saveFile(name, await blob.arrayBuffer()); if (p) toast('Zapisano ' + p.split('/').pop()); return; }
+  download(blob, name); toast('Zapisano ' + name);
+}
+const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
+const loadImg = url => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('img')); im.src = url; });
+const loadVid = url => new Promise((res, rej) => { const v = document.createElement('video'); v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto'; v.onloadeddata = () => res(v); v.onerror = () => rej(new Error('video')); v.src = url; });
+const fileURL = p => 'file://' + p.split('/').map(encodeURIComponent).join('/');
+async function itemData(it){
+  if (it.data) return it.data;
+  if (it.blob) return (it.data = await blobToDataURL(it.blob));
+  const c = document.createElement('canvas'); c.width = it.w; c.height = it.h; c.getContext('2d').drawImage(it.el, 0, 0);
+  return (it.data = c.toDataURL('image/png'));
+}
+function projectThumb(){
+  const k = 360 / Math.max(W, H), c = document.createElement('canvas');
+  c.width = Math.round(W * k); c.height = Math.round(H * k); c.getContext('2d').drawImage(cv, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.82);
+}
+async function serializeProject(name){
+  let source = {type:'sample', pos:src ? src.pos : null};
+  if (src && !src.sample) source = src.type === 'video'
+    ? {type:'video', name:src.name, path:src.path || null, pos:src.pos}
+    : {type:'image', name:src.name, data:await itemData(src), pos:src.pos};
+  const sequence = await Promise.all(seq.items.map(async it => ({name:it.name, data:await itemData(it), pos:it.pos})));
+  return {app:'kropkarnia', version:1, name, saved:new Date().toISOString(), settings:{...S}, source, sequence, thumb:projectThumb()};
+}
+function resetState(){
+  setEditFrame(false); setEditRegion(false); if (recorder) stopRec();
+  seq.items.forEach(it => { if (it.url && it.url.startsWith('blob:')) URL.revokeObjectURL(it.url); });
+  seq.items = []; seq.sel = null; seq.cur = -1; showT = 0; seqT = 0; morph = null; needClear = true;
+}
+function finishLoad(){ layout(); renderThumbs(); updateSourceInfo(); refreshAll(); save(); }
+const sampleSource = () => { setSource(makeSample(), 'image', 1080, 1350, 'przyklad-kula.png'); src.sample = true; };
+async function confirmLeave(){
+  if (!proj.dirty) return true;
+  const a = await DESK.confirmUnsaved(proj.name);
+  if (a === 'cancel') return false;
+  return a === 'save' ? saveProject(false) : true;
+}
+async function newProject(){
+  if (!(await confirmLeave())) return;
+  loadingProject = true;
+  try { resetState(); for (const k of Object.keys(S)) delete S[k]; Object.assign(S, DEFAULTS, PRESETS[0][2], {preset:'kosmos'}); lookVer++; sampleSource(); finishLoad(); }
+  finally { loadingProject = false; }
+  proj = {path:null, name:'Bez tytułu', dirty:false}; updateTitle(); hideStart();
+}
+async function loadProject(text, path, name){
+  let obj; try { obj = JSON.parse(text); } catch (e) { throw new Error('Plik jest uszkodzony albo nie jest projektem Kropkarni.'); }
+  if (!obj || obj.app !== 'kropkarnia') throw new Error('To nie jest plik projektu Kropkarni.');
+  const warns = [];
+  loadingProject = true;
+  try {
+    resetState();
+    for (const k of Object.keys(S)) delete S[k]; Object.assign(S, DEFAULTS, obj.settings || {}); lookVer++;
+    const so = obj.source || {type:'sample'};
+    if (so.type === 'image' && so.data) { const im = await loadImg(so.data); setSource(im, 'image', im.naturalWidth, im.naturalHeight, so.name || 'zdjęcie'); src.data = so.data; }
+    else if (so.type === 'video' && so.path) {
+      try { const v = await loadVid(fileURL(so.path)); setSource(v, 'video', v.videoWidth, v.videoHeight, so.name || 'wideo'); src.path = so.path; }
+      catch (e) { warns.push(`Nie znaleziono wideo „${so.name}” (${so.path}). Wgraj je ponownie.`); sampleSource(); }
+    } else { if (so.type === 'video') warns.push(`Wideo „${so.name}” nie ma zapisanej ścieżki. Wgraj je ponownie.`); sampleSource(); }
+    if (so.pos) src.pos = {...so.pos};
+    const items = await Promise.all((obj.sequence || []).map(async d => {
+      try { const im = await loadImg(d.data); return {el:im, url:d.data, data:d.data, name:d.name, w:im.naturalWidth, h:im.naturalHeight, ver:-1, ok:true, pos:d.pos ? {...d.pos} : {x:0, y:0, z:1}}; }
+      catch (e) { warns.push(`Nie udało się wczytać zdjęcia „${d.name}”.`); return null; }
+    }));
+    seq.items = items.filter(Boolean);
+    if (src.type === 'video') { if (seqActive()) src.el.pause(); else if (playing) src.el.play().catch(() => {}); }
+    finishLoad();
+  } finally { loadingProject = false; }
+  proj = {path, name:name || obj.name || 'Bez tytułu', dirty:false}; updateTitle(); hideStart();
+  toast(warns[0] || `Otwarto projekt „${proj.name}”.`);
+}
+async function saveProject(as){
+  let path = proj.path, name = proj.name;
+  if (as || !path) { const r = await DESK.chooseSavePath(name); if (!r) return false; path = r.path; name = r.name; }
+  try { const data = await serializeProject(name); await DESK.writeProject({path, name, json:JSON.stringify(data), thumb:data.thumb}); }
+  catch (e) { toast('Nie udało się zapisać projektu. ' + cleanErr(e)); return false; }
+  if (src && src.type === 'video' && !src.path) toast(`Zapisano „${name}”, ale bez wideo: wgraj je z dysku, żeby projekt zapamiętał plik.`);
+  else toast(`Zapisano projekt „${name}”.`);
+  proj = {path, name, dirty:false}; updateTitle();
+  return true;
+}
+const cleanErr = e => String(e && e.message || e || '').replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
+async function openProject(p){
+  if (!(await confirmLeave())) return;
+  try { const r = p ? await DESK.readProject(p) : await DESK.openProjectDialog(); if (r) await loadProject(r.text, r.path, r.name); }
+  catch (e) { toast(cleanErr(e) || 'Nie udało się otworzyć projektu.'); }
+}
+const fmtDate = ms => new Date(ms).toLocaleString('pl-PL', {day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'});
+async function renderRecent(){
+  const box = $('#recentList'), list = await DESK.recent();
+  box.textContent = '';
+  if (!list.length) { box.innerHTML = '<p class="dsub">Tu pojawią się zapisane projekty. Zacznij od nowego projektu albo otwórz plik .kropkarnia.</p>'; return; }
+  for (const r of list) {
+    const card = el('div', 'rcard' + (r.missing ? ' missing' : '')); card.tabIndex = 0; card.setAttribute('role', 'button'); card.setAttribute('aria-label', 'Otwórz projekt ' + r.name);
+    card.innerHTML = `<md-ripple></md-ripple><div class="rthumb">${r.thumb ? `<img src="${r.thumb}" alt="">` : ''}</div>
+      <div class="rmeta"><b>${esc(r.name)}</b><small>${r.missing ? 'Nie znaleziono pliku' : fmtDate(r.saved)}</small><small title="${esc(r.path)}">${esc(r.path.replace(/^\/Users\/[^/]+/, '~'))}</small></div>
+      <button class="rx" type="button" title="Usuń z listy" aria-label="Usuń ${esc(r.name)} z listy">${icon('close')}</button>`;
+    const open = () => r.missing ? toast('Ten plik został przeniesiony albo usunięty.') : openProject(r.path);
+    card.addEventListener('click', open); card.addEventListener('keydown', e => { if (e.key === 'Enter') open(); });
+    card.querySelector('.rx').addEventListener('click', async e => { e.stopPropagation(); await DESK.removeRecent(r.path); renderRecent(); });
+    box.appendChild(card);
+  }
+}
+async function showStart(){ $('#start').hidden = false; await renderRecent(); }
+function hideStart(){ $('#start').hidden = true; }
+function initDesktop(){
+  document.documentElement.classList.add('desktop');
+  updateTitle();
+  DESK.onMenu((a, arg) => {
+    if (a === 'new') newProject();
+    else if (a === 'open') openProject();
+    else if (a === 'openPath') openProject(arg);
+    else if (a === 'save') saveProject(false);
+    else if (a === 'saveAs') saveProject(true);
+    else if (a === 'showStart') showStart();
+    else if (a === 'recentChanged') { if (!$('#start').hidden) renderRecent(); }
+    else if (a === 'closeRequest') confirmLeave().then(ok => { if (ok) DESK.closeOk(); });
+  });
+  $('#stNew').addEventListener('click', newProject);
+  $('#stOpen').addEventListener('click', () => openProject());
+  $('#stClose').addEventListener('click', hideStart);
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#start').hidden) hideStart(); });
+  showStart();
+}
 
 /* ================= Start ================= */
 buildPanel();
 setPlaying(true);
-setSource(makeSample(), 'image', 1080, 1350, 'przyklad-kula.png');
+setSource(makeSample(), 'image', 1080, 1350, 'przyklad-kula.png'); src.sample = true;
 booted = true;
+if (DESK) initDesktop();
 requestAnimationFrame(t => { last = t; requestAnimationFrame(frame); });
 })();
 </script>
