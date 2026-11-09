@@ -66,7 +66,7 @@ md-icon svg{width:100%;height:100%;fill:currentColor;display:block}
 .mono{font-family:var(--font-mono)}
 .muted{color:var(--md-sys-color-on-surface-variant)}
 
-.app{display:grid;grid-template-columns:minmax(0,1fr) 360px;grid-template-rows:64px minmax(0,1fr);height:100%}
+.app{display:grid;grid-template-columns:80px minmax(0,1fr) 360px;grid-template-rows:64px minmax(0,1fr);height:100%}
 
 /* ---------- górny pasek aplikacji ---------- */
 .bar{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:0 16px;background:var(--md-sys-color-surface-container);min-width:0}
@@ -213,9 +213,26 @@ md-outlined-select{width:100%;min-width:0}
 #exCode{width:100%;height:180px;resize:vertical;padding:12px;border-radius:8px;border:1px solid var(--md-sys-color-outline-variant);background:var(--md-sys-color-surface-container-lowest);color:var(--md-sys-color-on-surface-variant);font:400 11px/16px var(--font-mono);white-space:pre;overflow:auto}
 .dactions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px}
 @media (max-width:560px){ .drow{grid-template-columns:1fr} }
+/* pasek narzędzi (M3 navigation rail) i dymki z ustawieniami */
+.rail{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 0;background:var(--md-sys-color-surface-container-low);min-height:0}
+.rail-btn{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;width:72px;padding:0 0 6px;border:0;border-radius:16px;background:none;color:var(--md-sys-color-on-surface-variant);font:500 12px/16px var(--font-ui);letter-spacing:.5px;cursor:pointer;outline:none}
+.rail-btn:hover{color:var(--md-sys-color-on-surface)}
+.rail-ic{display:grid;place-items:center;width:56px;height:32px;border-radius:16px;transition:background .2s}
+.rail-ic md-icon{--md-icon-size:24px}
+.rail-btn.on{color:var(--md-sys-color-on-surface)}
+.rail-btn.on .rail-ic{background:var(--md-sys-color-secondary-container);color:var(--md-sys-color-on-secondary-container)}
+.pop{position:fixed;z-index:15;width:340px;overflow:auto;padding:4px 20px 20px;border-radius:16px;background:var(--md-sys-color-surface-container-high);box-shadow:var(--elev-3);scrollbar-width:thin;scrollbar-color:var(--md-sys-color-outline-variant) transparent}
+.pop-head{display:flex;align-items:center;justify-content:space-between;height:52px;font:400 16px/24px var(--font-ui);letter-spacing:.15px}
+.pop-x{display:grid;place-items:center;width:36px;height:36px;margin-right:-8px;border:0;border-radius:50%;background:none;color:var(--md-sys-color-on-surface-variant);padding:0;cursor:pointer}
+.pop-x:hover{background:var(--md-sys-color-surface-container-highest);color:var(--md-sys-color-on-surface)}
+.pop-x md-icon{--md-icon-size:20px}
+.pop .gbody{padding-top:0}
+
 @media (max-width:900px){
+  .rail{flex-direction:row;justify-content:center;padding:6px 8px}
+  .pop{left:8px!important;right:8px;top:auto!important;bottom:max(8px,env(safe-area-inset-bottom,0px));width:auto;max-height:65vh!important}
   body{overflow:auto}
-  .app{grid-template-columns:1fr;grid-template-rows:auto 62vh auto;height:auto;min-height:100%}
+  .app{grid-template-columns:1fr;grid-template-rows:auto auto 62vh auto;height:auto;min-height:100%}
   .bar{flex-wrap:wrap;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));gap:8px}
   .bar .grow{display:none}
   .filepill{order:9;width:100%}
@@ -244,6 +261,8 @@ md-outlined-select{width:100%;min-width:0}
     <md-outlined-button id="btnPng"><md-icon aria-hidden="true" slot="icon"><svg viewBox="0 -960 960 960"><path d="M180-120q-24 0-42-18t-18-42v-600q0-24 18-42t42-18h600q24 0 42 18t18 42v600q0 24-18 42t-42 18H180Zm0-60h600v-600H180v600Zm56-97h489L578-473 446-302l-93-127-117 152Zm-56 97v-600 600Z"/></svg></md-icon>Zapisz PNG</md-outlined-button>
     <md-filled-button id="btnRec"><md-icon aria-hidden="true" slot="icon" class="i-rec"><svg viewBox="0 -960 960 960"><path d="M282.5-282.5Q200-365 200-480t82.5-197.5Q365-760 480-760t197.5 82.5Q760-595 760-480t-82.5 197.5Q595-200 480-200t-197.5-82.5Z"/></svg></md-icon><md-icon aria-hidden="true" slot="icon" class="i-stop"><svg viewBox="0 -960 960 960"><path d="M240-240v-480h480v480H240Z"/></svg></md-icon><span id="recLabel">Nagraj wideo</span></md-filled-button>
   </header>
+
+  <nav class="rail" id="rail" aria-label="Narzędzia"></nav>
 
   <main class="stage">
     <div class="canvas-wrap" id="wrap">
@@ -308,6 +327,7 @@ md-outlined-select{width:100%;min-width:0}
     <div class="recent" id="recentList"></div>
   </div>
 </div>
+<div id="pops"></div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script src="material.js"></script>
 <script src="default-image.js"></script>
@@ -1031,7 +1051,7 @@ let toastT = 0;
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3200); }
 function setRangeFill(){}
 
-const ICONS = {"upload": "M450-313v-371L330-564l-43-43 193-193 193 193-43 43-120-120v371h-60ZM220-160q-24 0-42-18t-18-42v-143h60v143h520v-143h60v143q0 24-18 42t-42 18H220Z", "image": "M180-120q-24 0-42-18t-18-42v-600q0-24 18-42t42-18h600q24 0 42 18t18 42v600q0 24-18 42t-42 18H180Zm0-60h600v-600H180v600Zm56-97h489L578-473 446-302l-93-127-117 152Zm-56 97v-600 600Z", "record": "M282.5-282.5Q200-365 200-480t82.5-197.5Q365-760 480-760t197.5 82.5Q760-595 760-480t-82.5 197.5Q595-200 480-200t-197.5-82.5Z", "stop": "M240-240v-480h480v480H240Z", "pause": "M555-200v-560h175v560H555Zm-325 0v-560h175v560H230Z", "play": "M320-203v-560l440 280-440 280Z", "down": "M480-344 240-584l43-43 197 197 197-197 43 43-240 240Z", "close": "m249-207-42-42 231-231-231-231 42-42 231 231 231-231 42 42-231 231 231 231-42 42-231-231-231 231Z", "add": "M450-450H200v-60h250v-250h60v250h250v60H510v250h-60v-250Z", "check": "M378-246 154-470l43-43 181 181 384-384 43 43-427 427Z", "movie": "m140-800 74 152h130l-74-152h89l74 152h130l-74-152h89l74 152h130l-74-152h112q24 0 42 18t18 42v520q0 24-18 42t-42 18H140q-24 0-42-18t-18-42v-520q0-24 18-42t42-18Zm0 212v368h680v-368H140Zm0 0v368-368Z", "photos": "M345-377h391L609-548 506-413l-68-87-93 123Zm-85 177q-24 0-42-18t-18-42v-560q0-24 18-42t42-18h560q24 0 42 18t18 42v560q0 24-18 42t-42 18H260Zm0-60h560v-560H260v560ZM140-80q-24 0-42-18t-18-42v-620h60v620h620v60H140Zm120-740v560-560Z"};
+const ICONS = {"category": "m261-526 220-354 220 354H261ZM706-80q-74 0-124-50t-50-124q0-74 50-124t124-50q74 0 124 50t50 124q0 74-50 124T706-80Zm-586-25v-304h304v304H120Zm586.08-35Q754-140 787-173.08q33-33.09 33-81Q820-302 786.92-335q-33.09-33-81-33Q658-368 625-334.92q-33 33.09-33 81Q592-206 625.08-173q33.09 33 81 33ZM180-165h184v-184H180v184Zm189-421h224L481-767 369-586Zm112 0ZM364-349Zm342 95Z", "grain": "M229.91-160q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm-170-165q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm-500-170q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm-170-165q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Z", "palette": "M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-85 32-158t87.5-127q55.5-54 130-84.5T489-880q79 0 150 26.5T763.5-780q53.5 47 85 111.5T880-527q0 108-63 170.5T650-294h-75q-18 0-31 14t-13 31q0 27 14.5 46t14.5 44q0 38-21 58.5T480-80Zm0-400Zm-198 11q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15Zm126-170q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15Zm214 0q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15Zm131 170q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15ZM480-140q11 0 15.5-4.5T500-159q0-14-14.5-26T471-238q0-46 30-81t76-35h73q76 0 123-44.5T820-527q0-132-100-212.5T489-820q-146 0-247.5 98.5T140-480q0 141 99.5 240.5T480-140Z", "flare": "M40-450v-60h232v60H40Zm271-157-80-80 42-42 80 80-42 42Zm139-81v-232h60v232h-60Zm199 81-42-42 80-80 42 42-80 80Zm39 157v-60h232v60H688Zm-280.5 42.5Q378-437 378-480t29.5-72.5Q437-582 480-582t72.5 29.5Q582-523 582-480t-29.5 72.5Q523-378 480-378t-72.5-29.5ZM692-226l-85-85 42-42 85 85-42 42Zm-424 0-42-42 85-85 42 42-85 85ZM450-40v-232h60v232h-60Z", "upload": "M450-313v-371L330-564l-43-43 193-193 193 193-43 43-120-120v371h-60ZM220-160q-24 0-42-18t-18-42v-143h60v143h520v-143h60v143q0 24-18 42t-42 18H220Z", "image": "M180-120q-24 0-42-18t-18-42v-600q0-24 18-42t42-18h600q24 0 42 18t18 42v600q0 24-18 42t-42 18H180Zm0-60h600v-600H180v600Zm56-97h489L578-473 446-302l-93-127-117 152Zm-56 97v-600 600Z", "record": "M282.5-282.5Q200-365 200-480t82.5-197.5Q365-760 480-760t197.5 82.5Q760-595 760-480t-82.5 197.5Q595-200 480-200t-197.5-82.5Z", "stop": "M240-240v-480h480v480H240Z", "pause": "M555-200v-560h175v560H555Zm-325 0v-560h175v560H230Z", "play": "M320-203v-560l440 280-440 280Z", "down": "M480-344 240-584l43-43 197 197 197-197 43 43-240 240Z", "close": "m249-207-42-42 231-231-231-231 42-42 231 231 231-231 42 42-231 231 231 231-42 42-231-231-231 231Z", "add": "M450-450H200v-60h250v-250h60v250h250v60H510v250h-60v-250Z", "check": "M378-246 154-470l43-43 181 181 384-384 43 43-427 427Z", "movie": "m140-800 74 152h130l-74-152h89l74 152h130l-74-152h89l74 152h130l-74-152h112q24 0 42 18t18 42v520q0 24-18 42t-42 18H140q-24 0-42-18t-18-42v-520q0-24 18-42t42-18Zm0 212v368h680v-368H140Zm0 0v368-368Z", "photos": "M345-377h391L609-548 506-413l-68-87-93 123Zm-85 177q-24 0-42-18t-18-42v-560q0-24 18-42t42-18h560q24 0 42 18t18 42v560q0 24-18 42t-42 18H260Zm0-60h560v-560H260v560ZM140-80q-24 0-42-18t-18-42v-620h60v620h620v60H140Zm120-740v560-560Z"};
 const icon = (n, attrs = '') => `<md-icon aria-hidden="true"${attrs ? ' ' + attrs : ''}><svg viewBox="0 -960 960 960"><path d="${ICONS[n]}"/></svg></md-icon>`;
 const SHAPES = [
   ['circle', 'Koło', '<circle cx="9" cy="9" r="6" fill="currentColor"/>'],
@@ -1078,10 +1098,10 @@ const SECTIONS = [
     {t:'range', k:'seqForce', l:'Siła przejścia', min:0, max:3, step:0.01, f:f2, when:() => [S.inType, S.outType].some(x => x !== 'none' && x !== 'fade')},
     {t:'button', text:'Odtwórz od początku', act:() => { showT = 0; seqT = 0; morph = null; seq.cur = -1; setPlaying(true); }, when:() => showOn()}]},
   {id:'frame', title:'Kadr zdjęcia', open:true, items:[{t:'frame'}]},
-  {id:'style', title:'Styl', open:true, items:[
+  {id:'style', title:'Styl', pop:'category', open:true, items:[
     {t:'seg', k:'style', opts:[['halftone','Halftone'],['pixels','Piksele'],['dots','Kropki'],['lines','Linie'],['ascii','ASCII']]},
     {t:'shapes', k:'shape'}]},
-  {id:'units', title:'Jednostki', open:true, items:[
+  {id:'units', title:'Jednostki', pop:'grain', open:true, items:[
     {t:'range', k:'cell', l:'Rozmiar komórki', min:4, max:80, step:1, f:px},
     {t:'range', k:'scale', l:'Skala jednostki', min:0.1, max:3, step:0.01, f:v => v.toFixed(2) + '×'},
     {t:'select', k:'map', l:'Ton steruje', opts:[['size','rozmiarem'],['opacity','przezroczystością'],['dither','ditheringiem'],['none','niczym (pełne)']], when:() => S.shape !== 'ascii'},
@@ -1098,11 +1118,11 @@ const SECTIONS = [
     {t:'range', k:'trail', l:'Smugi', min:0, max:0.95, step:0.01, f:f2},
     {t:'check', k:'sampleMoving', l:'Ton z aktualnej pozycji jednostki'},
     {t:'note', text:'Włączone: obraz stoi, a jednostki przez niego przepływają. Wyłączone: jednostki niosą swój fragment obrazu.'}]},
-  {id:'color', title:'Kolor', open:true, items:[
+  {id:'color', title:'Kolor', pop:'palette', open:true, items:[
     {t:'colors'},
     {t:'seg', k:'colorMode', opts:[['mono','Jednolity'],['source','Z obrazu'],['duo','Dwa kolory']]},
     {t:'range', k:'grain', l:'Ziarno papieru', min:0, max:0.5, step:0.01, f:f2}]},
-  {id:'glow', title:'Świecenie', open:true, items:[
+  {id:'glow', title:'Świecenie', pop:'flare', open:true, items:[
     {t:'note', text:'Efekt ekranu LED: poświata wokół kropek, podświetlone tło w kolorze jednostek i migoczące diody.'},
     {t:'range', k:'glow', l:'Poświata kropek', min:0, max:1, step:0.01, f:f2},
     {t:'range', k:'backlight', l:'Podświetlenie tła', min:0, max:1, step:0.01, f:f2},
@@ -1148,6 +1168,7 @@ const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls)
 function buildPanel(){
   const panel = $('#panel');
   for (const sec of SECTIONS) {
+    if (sec.pop) { buildPop(sec); continue; }
     const g = el('section', 'group'); const open = openSections[sec.id] ?? sec.open;
     if (!open) g.classList.add('closed');
     const h = el('button', 'ghead', `<md-ripple></md-ripple><md-focus-ring style="--md-focus-ring-shape:8px"></md-focus-ring><span>${sec.title}</span>${icon('down')}`);
@@ -1159,6 +1180,42 @@ function buildPanel(){
   }
   refreshAll();
 }
+
+/* Dymki z ustawieniami otwierane z paska narzędzi */
+let openPop = null;
+function buildPop(sec){
+  const b = el('button', 'rail-btn', `<md-ripple></md-ripple><md-focus-ring style="--md-focus-ring-shape:16px"></md-focus-ring><span class="rail-ic">${icon(sec.pop)}</span><span>${sec.title}</span>`);
+  b.type = 'button'; b.title = sec.title; b.setAttribute('aria-haspopup', 'dialog'); b.setAttribute('aria-expanded', 'false'); b.setAttribute('aria-controls', 'pop-' + sec.id);
+  const p = el('div', 'pop'); p.id = 'pop-' + sec.id; p.hidden = true; p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', sec.title);
+  p.innerHTML = `<div class="pop-head"><span>${sec.title}</span><button class="pop-x" type="button" aria-label="Zamknij ${sec.title}">${icon('close')}</button></div>`;
+  const body = el('div', 'gbody');
+  for (const it of sec.items) { const c = buildControl(it); if (c) { body.appendChild(c.el); controls.push(c); } }
+  p.appendChild(body); $('#pops').appendChild(p); $('#rail').appendChild(b);
+  b.addEventListener('click', () => togglePop(sec.id, b, p));
+  p.querySelector('.pop-x').addEventListener('click', () => { closePop(); b.focus(); });
+}
+function togglePop(id, b, p){
+  const same = openPop && openPop.id === id;
+  closePop(); if (same) return;
+  openPop = {id, b, p}; p.hidden = false; b.classList.add('on'); b.setAttribute('aria-expanded', 'true');
+  refreshAll(); placePop();
+}
+function closePop(){
+  if (!openPop) return;
+  openPop.p.hidden = true; openPop.b.classList.remove('on'); openPop.b.setAttribute('aria-expanded', 'false'); openPop = null;
+}
+function placePop(){
+  if (!openPop) return;
+  const {b, p} = openPop;
+  if (matchMedia('(max-width:900px)').matches) { p.style.left = p.style.top = p.style.maxHeight = ''; return; }
+  const r = b.getBoundingClientRect(), maxH = innerHeight - 88;
+  p.style.maxHeight = maxH + 'px';
+  const top = Math.max(72, Math.min(r.top - 8, innerHeight - Math.min(p.scrollHeight, maxH) - 16));
+  p.style.left = (r.right + 8) + 'px'; p.style.top = top + 'px';
+}
+document.addEventListener('pointerdown', e => { if (openPop && !openPop.p.contains(e.target) && !openPop.b.contains(e.target)) closePop(); }, true);
+addEventListener('keydown', e => { if (e.key === 'Escape' && openPop) { const b = openPop.b; closePop(); b.focus(); } });
+addEventListener('resize', placePop);
 
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 function segment(opts, onPick, cls){
