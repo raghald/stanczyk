@@ -87,6 +87,12 @@ md-icon svg{width:100%;height:100%;fill:currentColor;display:block}
 
 /* ---------- scena ---------- */
 .stage{display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px 32px 16px;min-width:0;min-height:0}
+.regbox{position:absolute;border:1.5px solid var(--md-sys-color-primary);cursor:move;touch-action:none;z-index:2;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.regbox .h{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;background:#fff;border:1.5px solid var(--md-sys-color-primary);border-radius:2px;touch-action:none}
+.regbox .h[data-d=nw]{left:0;top:0;cursor:nwse-resize}.regbox .h[data-d=n]{left:50%;top:0;cursor:ns-resize}.regbox .h[data-d=ne]{left:100%;top:0;cursor:nesw-resize}
+.regbox .h[data-d=e]{left:100%;top:50%;cursor:ew-resize}.regbox .h[data-d=se]{left:100%;top:100%;cursor:nwse-resize}.regbox .h[data-d=s]{left:50%;top:100%;cursor:ns-resize}
+.regbox .h[data-d=sw]{left:0;top:100%;cursor:nesw-resize}.regbox .h[data-d=w]{left:0;top:50%;cursor:ew-resize}
+.regbox .tag{position:absolute;left:0;top:-26px;padding:2px 8px;border-radius:4px;background:var(--md-sys-color-primary);color:var(--md-sys-color-on-primary);font:500 11px/18px var(--font-mono);white-space:nowrap;pointer-events:none}
 .imgbox{position:absolute;border:1.5px dashed var(--md-sys-color-primary);border-radius:2px;pointer-events:none}
 #cv.editing{cursor:grab}
 #cv.editing.dragging{cursor:grabbing}
@@ -219,6 +225,7 @@ md-outlined-select{width:100%;min-width:0}
       <canvas id="cv" width="1080" height="1350"></canvas>
       <div class="ring" id="ring" hidden></div>
       <div class="imgbox" id="imgbox" hidden></div>
+      <div class="regbox" id="regbox" hidden><span class="tag" id="regtag"></span><i class="h" data-d="nw"></i><i class="h" data-d="n"></i><i class="h" data-d="ne"></i><i class="h" data-d="e"></i><i class="h" data-d="se"></i><i class="h" data-d="s"></i><i class="h" data-d="sw"></i><i class="h" data-d="w"></i></div>
       <div class="drop" id="drop" hidden>Upuść zdjęcie lub wideo</div>
     </div>
     <div class="transport" id="transport" hidden>
@@ -278,13 +285,13 @@ const LOOK = {
   grid:'square', angle:45, jitter:0,
   bright:0, contrast:1, gamma:1, blur:0.3, invert:false, fit:'cover', zoom:1,
   colorMode:'mono', bg:'#f1efe8', fg:'#121212', fg2:'#ff2d6f', grain:0,
-  glow:0, backlight:0, twinkle:0, region:false, outside:'photo',
+  glow:0, backlight:0, twinkle:0,
   anim:'none', speed:1, amp:3, freq:25, inertia:0, trail:0, sampleMoving:true,
   mouse:'repel', mouseR:14, mouseF:1,
 };
 const OUT = { aspect:'source', res:1080, fps:30, recSec:8, recClip:true,
   seqOn:false, seqType:'scatter', seqHold:2.5, seqTrans:2.2, seqForce:1, seqLoop:true,
-  rx:0.05, ry:0.08, rw:0.56, rh:0.62,
+  region:false, outside:'photo', rx:0.05, ry:0.08, rw:0.56, rh:0.62,
   inType:'none', inDur:1.8, outType:'none', outDur:1.8, showHold:3, outAfter:'repeat', showGap:0.6 };
 const DEFAULTS = {...LOOK, ...OUT};
 
@@ -304,7 +311,7 @@ const PRESETS = [
   ['mozaika','Mozaika',{style:'pixels', ...STYLES.pixels, map:'none', colorMode:'source', cell:22, scale:1, bg:'#000000', fg:'#ffffff', blur:0, anim:'jitter', amp:0.4, speed:0.5}],
   ['dryf','Dryf',     {style:'dots', ...STYLES.dots, map:'dither', cell:8, scale:0.45, grid:'square', jitter:0.6, bg:'#0a0a0a', fg:'#f3f1ea', anim:'drift', amp:4, trail:0.6, contrast:1.4}],
   ['ascii','ASCII',   {style:'ascii', ...STYLES.ascii, cell:12, bg:'#0d0d0f', fg:'#e9e7e2', contrast:1.3, blur:0.4}],
-  ['led','LED',       {style:'pixels', shape:'square', map:'dither', angle:0, grid:'square', jitter:0, cell:8, scale:0.6, bg:'#1a0700', fg:'#ffb21c', glow:0.55, backlight:0.5, twinkle:0.45, contrast:1.5, bright:0.02, blur:0.6, region:true, outside:'photo'}],
+  ['led','LED',       {style:'pixels', shape:'square', map:'dither', angle:0, grid:'square', jitter:0, cell:8, scale:0.6, bg:'#1a0700', fg:'#ffb21c', glow:0.55, backlight:0.5, twinkle:0.45, contrast:1.5, bright:0.02, blur:0.6}],
   ['duo','Duo',       {bg:'#0c0c0c', fg:'#ff2d6f', fg2:'#ffe8ef', colorMode:'duo', cell:16, angle:15, anim:'vortex', amp:6, freq:40, inertia:0.5}],
 ];
 
@@ -1059,8 +1066,10 @@ const SECTIONS = [
     {t:'range', k:'glow', l:'Poświata kropek', min:0, max:1, step:0.01, f:f2},
     {t:'range', k:'backlight', l:'Podświetlenie tła', min:0, max:1, step:0.01, f:f2},
     {t:'range', k:'twinkle', l:'Migotanie', min:0, max:1, step:0.01, f:f2}]},
-  {id:'region', title:'Okno efektu', open:true, items:[
-    {t:'check', k:'region', l:'Efekt tylko w oknie'},
+  {id:'region', title:'Okno (maska)', open:true, items:[
+    {t:'note', text:'Ogranicza dowolny efekt do prostokąta. Działa niezależnie od stylu i presetów.'},
+    {t:'check', k:'region', l:'Pokaż efekt tylko w oknie'},
+    {t:'regionEdit', when:() => S.region},
     {t:'label', text:'Poza oknem', when:() => S.region},
     {t:'seg', k:'outside', opts:[['photo','Oryginalne zdjęcie'],['bg','Kolor tła']], when:() => S.region},
     {t:'range', k:'rx', l:'Okno od lewej', min:0, max:1, step:0.01, f:v => Math.round(v * 100) + ' %', when:() => S.region},
@@ -1167,6 +1176,12 @@ function buildControl(it){
       return {el:box, it, refresh(){ c.selected = !!S[it.k]; }};
     }
     case 'label': return {el:el('p', 'sublabel', it.text), it, refresh(){}};
+    case 'regionEdit': {
+      const box = el('label', 'check');
+      box.innerHTML = '<span>Przesuwaj i zmieniaj rozmiar na podglądzie</span><md-switch id="rg-edit" aria-label="Edytuj okno na podglądzie"></md-switch>';
+      const sw = box.querySelector('md-switch'); sw.addEventListener('change', () => setEditRegion(sw.selected));
+      return {el:box, it, refresh(){ sw.selected = editRegion; }};
+    }
     case 'button': { const b = el('md-outlined-button', '', esc(it.text)); b.addEventListener('click', () => it.act()); const w = el('div', 'frame-actions'); w.appendChild(b); return {el:w, it, refresh(){}}; }
     case 'note': { const p = el('p', 'note'); return {el:p, it, refresh(){ p.textContent = typeof it.text === 'function' ? it.text() : it.text; }}; }
     case 'frame': {
@@ -1216,7 +1231,7 @@ function buildControl(it){
     }
   }
 }
-function refreshAll(){ for (const c of controls) { c.refresh(); if (c.it && c.it.when) c.el.hidden = !c.it.when(); } }
+function refreshAll(){ for (const c of controls) { c.refresh(); if (c.it && c.it.when) c.el.hidden = !c.it.when(); } if (typeof updateRegBox === 'function' && !rgDrag) updateRegBox(); }
 
 let thumbsBox = null, dragFrom = -1;
 function renderThumbs(){
@@ -1285,6 +1300,7 @@ function apply(k){
     layout(); updateSourceInfo(); markThumbs(); return;
   }
   if (['region','outside','rx','ry','rw','rh','backlight','glow'].includes(k)) needClear = true;
+  if (k === 'region' && !S.region) editRegion = false;
   if (k === 'seqHold' || k === 'seqTrans' || k === 'seqLoop') { morph = null; updateSourceInfo(); return; }
   if (['inType','inDur','outType','outDur','showHold','outAfter','showGap'].includes(k)) { if (k === 'inType' || k === 'outType') showT = 0; morph = null; updateSourceInfo(); return; }
   if (k === 'style' || REGEN.has(k)) regen();
@@ -1382,7 +1398,50 @@ function frameChanged(it){
   morph = null; updateImgBox(); if (frameCtl) frameCtl.refresh();
 }
 function showFrameTarget(){ const t = frameTarget(); if (!t) return; if (t.i >= 0) seqT = t.i * seqCycle() + 0.001; if (showOn()) showT = (S.inType !== 'none' ? S.inDur : 0) + (t.i >= 0 ? seqT : 0.001); morph = null; }
+/* ================= Okno (maska) — edycja na podglądzie ================= */
+let editRegion = false, rgDrag = null;
+function setEditRegion(on){
+  editRegion = on && S.region;
+  if (editRegion && editFrame) setEditFrame(false);
+  if (editRegion) { mouse.active = false; ring.hidden = true; }
+  updateRegBox(); refreshAll();
+}
+function updateRegBox(){
+  const b = $('#regbox');
+  if (!editRegion || !S.region) { b.hidden = true; return; }
+  const cr = cv.getBoundingClientRect(), wr = $('#wrap').getBoundingClientRect();
+  Object.assign(b.style, {left:(cr.left - wr.left + S.rx * cr.width) + 'px', top:(cr.top - wr.top + S.ry * cr.height) + 'px', width:(S.rw * cr.width) + 'px', height:(S.rh * cr.height) + 'px'});
+  $('#regtag').textContent = `${Math.round(S.rw * 100)} × ${Math.round(S.rh * 100)} % · ${Math.round(S.rx * 100)}, ${Math.round(S.ry * 100)}`;
+  b.hidden = false;
+}
+{
+  const rb = $('#regbox');
+  rb.addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation();
+    const d = e.target.dataset && e.target.dataset.d || 'move';
+    rgDrag = {d, x:e.clientX, y:e.clientY, rx:S.rx, ry:S.ry, rw:S.rw, rh:S.rh};
+    try { rb.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  rb.addEventListener('pointermove', e => {
+    if (!rgDrag) return;
+    const cr = cv.getBoundingClientRect(), dx = (e.clientX - rgDrag.x) / cr.width, dy = (e.clientY - rgDrag.y) / cr.height, MIN = 0.05, d = rgDrag.d;
+    let {rx, ry, rw, rh} = rgDrag;
+    if (d === 'move') { rx = Math.min(Math.max(0, rx + dx), 1 - rw); ry = Math.min(Math.max(0, ry + dy), 1 - rh); }
+    else {
+      if (d.includes('w')) { const nx = Math.min(Math.max(0, rx + dx), rx + rw - MIN); rw += rx - nx; rx = nx; }
+      if (d.includes('e')) rw = Math.min(Math.max(MIN, rw + dx), 1 - rx);
+      if (d.includes('n')) { const ny = Math.min(Math.max(0, ry + dy), ry + rh - MIN); rh += ry - ny; ry = ny; }
+      if (d.includes('s')) rh = Math.min(Math.max(MIN, rh + dy), 1 - ry);
+    }
+    Object.assign(S, {rx:+rx.toFixed(4), ry:+ry.toFixed(4), rw:+rw.toFixed(4), rh:+rh.toFixed(4)});
+    needClear = true; updateRegBox(); refreshAll(); save();
+  });
+  const end = () => { rgDrag = null; };
+  rb.addEventListener('pointerup', end); rb.addEventListener('pointercancel', end);
+}
+
 function setEditFrame(on){
+  if (on && editRegion) setEditRegion(false);
   if (on === editFrame) return;
   editFrame = on; cv.classList.toggle('editing', on);
   if (on) { editWasPlaying = playing; setPlaying(false); mouse.active = false; ring.hidden = true; showFrameTarget(); }
@@ -1416,7 +1475,7 @@ cv.addEventListener('wheel', e => {
 /* ================= Kursor ================= */
 const ring = $('#ring');
 function pointer(e){
-  if (editFrame) { mouse.active = false; ring.hidden = true; return; }
+  if (editFrame || editRegion) { mouse.active = false; ring.hidden = true; return; }
   const r = cv.getBoundingClientRect();
   mouse.x = (e.clientX - r.left) / r.width * W; mouse.y = (e.clientY - r.top) / r.height * H; mouse.active = true;
   if (S.mouse !== 'off') {
@@ -1437,6 +1496,7 @@ function fitCanvas(){
   cv.style.width = w + 'px'; cv.style.height = h + 'px';
   $('#transport').style.width = w + 'px'; $('#status').style.width = Math.max(w, 280) + 'px';
   if (editFrame) updateImgBox();
+  if (editRegion) updateRegBox();
 }
 new ResizeObserver(fitCanvas).observe($('#wrap'));
 
