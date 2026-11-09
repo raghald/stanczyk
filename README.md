@@ -10,7 +10,7 @@ Stańczyk to edytor, który zamienia zdjęcia i wideo w animowane obrazy z krope
 
 ## Domyślny obraz
 
-Na start aplikacja pokazuje obraz Jana Matejki „Stańczyk” (1862, Muzeum Narodowe w Warszawie, domena publiczna) z presetem „Stańczyk”. Plik źródłowy leży w `assets/`, a w aplikacji jest wbudowany w `default-image.js`.
+Na start aplikacja pokazuje obraz Jana Matejki „Stańczyk” (1862, Muzeum Narodowe w Warszawie, domena publiczna) z presetem „Mozaika”. Plik źródłowy leży w `assets/`, a w aplikacji jest wbudowany w `default-image.js`.
 
 ## Projekty (aplikacja desktopowa)
 

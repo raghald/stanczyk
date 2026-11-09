@@ -343,7 +343,6 @@ const STYLES = {
   ascii:   {shape:'ascii',  map:'none',    angle:0,  scale:1.1,  grid:'square', jitter:0},
 };
 const PRESETS = [
-  ['stanczyk','Stańczyk', {style:'halftone', shape:'circle', map:'size', colorMode:'source', bg:'#0b0907', fg:'#f2e6d8', cell:9, scale:1.45, angle:45, contrast:1.25, bright:0.16, gamma:0.75, blur:0.3, minTone:0.03, anim:'breathe', amp:1.2, freq:35, speed:0.6, glow:0.25}],
   ['kosmos','Kosmos', {style:'dots', ...STYLES.dots, cell:9, contrast:1.5, bg:'#000000', fg:'#ffffff', anim:'flow', amp:3.5, freq:28, speed:0.8, inertia:0.7, trail:0.55, blur:0.5}],
   ['gazeta','Gazeta', {bg:'#f1efe8', fg:'#141414', cell:11, scale:1.32, grain:0.1, anim:'breathe', amp:1.5, freq:40, speed:0.6}],
   ['plakat','Plakat', {bg:'#f5f5f3', fg:'#0b0b0b', cell:24, scale:1.55, angle:30, contrast:1.7, blur:1, grain:0.16, anim:'ripple', amp:0.8, freq:30}],
@@ -356,8 +355,9 @@ const PRESETS = [
   ['duo','Duo',       {bg:'#0c0c0c', fg:'#ff2d6f', fg2:'#ffe8ef', colorMode:'duo', cell:16, angle:15, anim:'vortex', amp:6, freq:40, inertia:0.5}],
 ];
 
-let S = {...DEFAULTS, preset:'stanczyk'};
-Object.assign(S, PRESETS[0][2]);
+const DEFAULT_PRESET = 'mozaika';
+let S = {...DEFAULTS, preset:DEFAULT_PRESET};
+Object.assign(S, PRESETS.find(p => p[0] === DEFAULT_PRESET)[2]);
 const STORE = 'kropkarnia:v1';
 try { const saved = JSON.parse(localStorage.getItem(STORE) || 'null'); if (saved) S = {...DEFAULTS, ...saved}; } catch (e) {}
 let openSections = {};
@@ -1781,7 +1781,7 @@ async function confirmLeave(){
 async function newProject(){
   if (!(await confirmLeave())) return;
   loadingProject = true;
-  try { resetState(); for (const k of Object.keys(S)) delete S[k]; Object.assign(S, DEFAULTS, PRESETS[0][2], {preset:'stanczyk'}); lookVer++; await sampleSource(); finishLoad(); }
+  try { resetState(); for (const k of Object.keys(S)) delete S[k]; Object.assign(S, DEFAULTS, PRESETS.find(p => p[0] === DEFAULT_PRESET)[2], {preset:DEFAULT_PRESET}); lookVer++; await sampleSource(); finishLoad(); }
   finally { loadingProject = false; }
   proj = {path:null, name:'Bez tytułu', dirty:false}; updateTitle(); hideStart();
 }
