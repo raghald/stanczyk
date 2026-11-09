@@ -43,9 +43,9 @@ W folderze `dist/` powstają:
 
 | Plik | System |
 |---|---|
-| `Stanczyk-1.0.0-mac-arm64.dmg` | macOS, Mac z procesorem Apple (M1 i nowsze) |
-| `Stanczyk-1.0.0-mac-x64.dmg` | macOS, Mac z procesorem Intel |
-| `Stanczyk-1.0.0-win-x64-setup.exe` | Windows 10 i 11, 64-bit |
+| `Stanczyk-<wersja>-mac-arm64.dmg` | macOS, Mac z procesorem Apple (M1 i nowsze) |
+| `Stanczyk-<wersja>-mac-x64.dmg` | macOS, Mac z procesorem Intel |
+| `Stanczyk-<wersja>-win-x64-setup.exe` | Windows 10 i 11, 64-bit |
 
 **macOS:** otwórz DMG i przeciągnij Stańczyka do Aplikacji. Aplikacja jest podpisana tylko lokalnie, bez notaryzacji Apple, więc przy pierwszym uruchomieniu na innym Macu pojawi się ostrzeżenie: kliknij aplikację prawym przyciskiem → Otwórz (na macOS 15 i nowszym: Ustawienia systemowe → Prywatność i ochrona → „Otwórz mimo to”).
 
