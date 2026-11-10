@@ -6,6 +6,7 @@
   "main": "desktop/main.js",
   "private": true,
   "author": "Fryderyk Głowacki",
+  "license": "GPL-3.0-only",
   "scripts": {
     "start": "electron .",
     "smoke": "STANCZYK_SMOKE=1 electron .",
@@ -27,7 +28,8 @@
       "material.js",
       "default-image.js",
       "desktop/**/*",
-      "package.json"
+      "package.json",
+      "LICENSE"
     ],
     "directories": {
       "output": "dist",

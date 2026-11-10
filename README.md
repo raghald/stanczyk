@@ -83,3 +83,12 @@ Inne polecenia:
 | `build/` | ikony aplikacji (macOS i Windows) |
 | `scripts/after-pack.js` | podpis lokalny aplikacji na Maca przed spakowaniem do DMG |
 | `package.json` | zależności i konfiguracja budowania |
+
+## Licencja
+
+Stańczyk jest udostępniony na licencji [GNU GPL 3.0](LICENSE). Możesz go używać, zmieniać i rozpowszechniać, także komercyjnie, pod warunkiem że każda rozpowszechniana wersja (również zmieniona) będzie dostępna z kodem źródłowym na tej samej licencji.
+
+Elementy z innymi licencjami:
+
+- `material.js` — komponenty [Material Web](https://github.com/material-components/material-web) (Google), licencja Apache-2.0; nagłówki licencji są zachowane w pliku.
+- Domyślny obraz — Jan Matejko, „Stańczyk” (1862), domena publiczna.
