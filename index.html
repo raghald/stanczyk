@@ -482,6 +482,7 @@ void main(){
   vec2 uv = vec2(gl_FragCoord.x / u_res.x, 1.0 - gl_FragCoord.y / u_res.y);
   if (u_hole == 1 && uv.x >= u_reg.x && uv.x <= u_reg.x + u_reg.z && uv.y >= u_reg.y && uv.y <= u_reg.y + u_reg.w) discard;
   vec4 c = mix(texture(u_a, uv), texture(u_b, uv), u_mix);
+  if (u_mode == 2) { vec2 t = (uv - u_reg.xy) / u_reg.zw; if (t.x < 0.0 || t.y < 0.0 || t.x > 1.0 || t.y > 1.0) discard; o = texture(u_a, t); return; }
   if (u_mode == 0) { o = vec4(c.rgb, 1.0); return; }
   float l = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
   float v = clamp((l - 0.5) * u_con + 0.5 + u_bri, 0.0, 1.0); v = pow(v, u_gam);
@@ -525,6 +526,10 @@ function buildAtlas(){
 buildAtlas();
 if (document.fonts) document.fonts.ready.then(buildAtlas);
 let pTex, uT, texA, texB, texPA, texPB, photoCv, photoCtx, up;
+// Wersja demo (przeglądarka, GitHub Pages) dodaje znak w prawym dolnym rogu podglądu, PNG, wideo i eksportu kodu
+const DEMO = !window.stanczykDesktop, WM_TEXT = '@fritzglowacki';
+let wmTex = null, wmKey = '', wmW = 0, wmH = 0;
+if (document.fonts) document.fonts.ready.then(() => { wmKey = ''; });
 function initExtras(){
   pTex = program(VS_FULL, FS_TEX);
   const UT = n => gl.getUniformLocation(pTex, n);
@@ -968,6 +973,27 @@ function upPhoto(tex, it, slot){
   gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, tex); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, photoCv);
 }
+function drawWatermark(){
+  const short = Math.min(W, H), fs = Math.max(11, Math.round(short * 0.026)), pad = Math.round(fs * 0.5), key = W + 'x' + H;
+  if (wmKey !== key) {
+    const c = document.createElement('canvas'), x = c.getContext('2d'), font = `500 ${fs}px Roboto, "Helvetica Neue", Arial, sans-serif`;
+    x.font = font; c.width = Math.ceil(x.measureText(WM_TEXT).width) + pad * 2; c.height = Math.ceil(fs * 1.4) + pad * 2;
+    x.font = font; x.textBaseline = 'middle'; x.shadowColor = 'rgba(0,0,0,0.6)'; x.shadowBlur = Math.max(2, fs * 0.3);
+    x.fillStyle = 'rgba(255,255,255,0.9)'; x.fillText(WM_TEXT, pad, c.height / 2);
+    if (!wmTex) { wmTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, wmTex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); }
+    gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, wmTex); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+    wmW = c.width; wmH = c.height; wmKey = key;
+  }
+  const m = Math.round(short * 0.02);
+  gl.useProgram(pTex); gl.bindVertexArray(vaoEmpty);
+  gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, wmTex); gl.uniform1i(uT.a, 3);
+  gl.uniform1i(uT.mode, 2); gl.uniform2f(uT.res, W, H); gl.uniform1i(uT.hole, 0);
+  gl.uniform4f(uT.reg, (W - m - wmW) / W, (H - m - wmH) / H, wmW / W, wmH / H);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
 function drawTex(mode, mixv, hole, str){
   gl.useProgram(pTex); gl.bindVertexArray(vaoEmpty);
   gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, mode === 0 ? texPA : texA); gl.uniform1i(uT.a, 1);
@@ -1017,6 +1043,7 @@ function render(count){
     gl.uniform1i(uF.mode, 1); gl.uniform1f(uF.seed, Math.random() * 100); gl.uniform1f(uF.amt, S.grain);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
+  if (DEMO) drawWatermark();
   gl.bindVertexArray(null);
 }
 
@@ -1167,6 +1194,7 @@ const SECTIONS = [
     {t:'select', k:'fps', l:'Klatki nagrania', num:true, opts:[[24,'24 kl/s'],[30,'30 kl/s'],[60,'60 kl/s']]},
     {t:'range', k:'recSec', l:'Długość nagrania', min:1, max:60, step:1, f:v => v + ' s', when:() => !seqActive() && !(showOn() && S.outType !== 'none') && !(src && src.type === 'video' && S.recClip)},
     {t:'check', k:'recClip', l:'Nagrywaj cały klip wideo od początku', when:() => !seqActive() && src && src.type === 'video'},
+    {t:'note', text:'Wersja demo dodaje w prawym dolnym rogu podglądu, PNG, wideo i eksportu kodu znak @fritzglowacki. Aplikacja na Maca i Windowsa (wydania na GitHubie) zapisuje bez znaku.', when:() => DEMO},
     {t:'note', text:() => showOn() ? `Nagranie obejmie cały pokaz z wejściem${S.outType !== 'none' ? ' i wyjściem' : ''}: ${showRecLen().toFixed(1)} s.` : `Sekwencja nagra się w całości od pierwszego zdjęcia: ${seqSpan().toFixed(1)} s.`, when:() => seqActive() || showOn()}]},
 ];
 
@@ -1745,6 +1773,7 @@ function stanczykPlayer(root, CFG){
     for (let i = 0; i < 512; i++) P[i] = p[i & 255]; }
   const [VS_PTS, FS_PTS, VS_FULL, FS_FULL, FS_TEX] = CFG.sh;
   let pTex, uT, texA, texB, texPA, texPB, photoCv, photoCtx, up;
+  const DEMO = !!CFG.demo, WM_TEXT = '@fritzglowacki'; let wmTex = null, wmKey = '', wmW = 0, wmH = 0;
   const RAMP = ' .:-=+*#%@', GLYPHS = RAMP.length, SHAPE_ID = {circle:0, square:1, diamond:2, ring:3, cross:4, line:5, ascii:6};
   function markThumbs(){}
   /*ENGINE*/
@@ -1791,7 +1820,7 @@ function stanczykPlayer(root, CFG){
   Promise.all(CFG.images.map(d => new Promise(res => { const im = new Image(); im.onload = () => res({el:im, w:im.naturalWidth, h:im.naturalHeight, ver:-1, pos:d.p}); im.onerror = () => res(null); im.src = d.u; })))
     .then(list => { list = list.filter(Boolean); if (!list.length) return; if (list.length >= 2) seq.items = list; else src = list[0]; start(); });
 }
-const ENGINE = {fade, lerp, grad, noise, mulberry, hex, lum3, shader, program, buildAtlas, sampleFrom, drawSample, ensureSample, invalidate, regen, step, seqActive, seqCycle, seqSpan, seqUpdate, showOn, showBody, showSpan, srcItem, showUpdate, toneCtx, toneOf, evalInto, buildPairs, stepMorph, initExtras, upData, upPhoto, drawTex, render};
+const ENGINE = {fade, lerp, grad, noise, mulberry, hex, lum3, shader, program, buildAtlas, sampleFrom, drawSample, ensureSample, invalidate, regen, step, seqActive, seqCycle, seqSpan, seqUpdate, showOn, showBody, showSpan, srcItem, showUpdate, toneCtx, toneOf, evalInto, buildPairs, stepMorph, initExtras, upData, upPhoto, drawWatermark, drawTex, render};
 function exportItems(){ return seqActive() ? seq.items : (src && src.type === 'image' ? [src] : []); }
 function buildExport(o){
   const items = exportItems();
@@ -1800,7 +1829,7 @@ function buildExport(o){
     return {u:c.toDataURL('image/jpeg', 0.86), p:it.pos || {x:0, y:0, z:1}}; });
   const s = {...S, res:o.res, seqOn:images.length >= 2};
   s.mouse = o.mouse ? (S.mouse === 'off' ? 'repel' : S.mouse) : 'off';
-  const cfg = {S:s, W, H, images, sh:[VS_PTS, FS_PTS, VS_FULL, FS_FULL, FS_TEX], alt: images.length >= 2 ? `Animacja: sekwencja ${images.length} zdjęć` : 'Animacja z kropek'};
+  const cfg = {S:s, W, H, images, demo:DEMO, sh:[VS_PTS, FS_PTS, VS_FULL, FS_FULL, FS_TEX], alt: images.length >= 2 ? `Animacja: sekwencja ${images.length} zdjęć` : 'Animacja z kropek'};
   const engine = Object.entries(ENGINE).map(([n, f]) => `var ${n} = ${f.toString()};`).join('\n  ');
   const player = stanczykPlayer.toString().replace('/*ENGINE*/', engine);
   const json = JSON.stringify(cfg).replace(/<\//g, '<\\/');
@@ -1819,6 +1848,7 @@ function refreshExport(){
        : 'Eksportuję bieżące zdjęcie z obecnymi ustawieniami. Animacja dopasuje się do szerokości miejsca na stronie i zatrzyma, gdy nie będzie jej widać.')
     : 'Eksport działa ze zdjęciem albo z sekwencją zdjęć. Bieżące źródło to wideo: wgraj zdjęcie albo dodaj zdjęcia do sekwencji.';
   $('#exOpts').hidden = $('#exCode').hidden = $('#exSize').hidden = !ok;
+  if (ok && DEMO) $('#exInfo').textContent += ' Wersja demo dodaje w prawym dolnym rogu znak @fritzglowacki.';
   $('#exCopy').disabled = $('#exFile').disabled = !ok;
   if (!ok) return;
   const code = buildExport(exOpts);

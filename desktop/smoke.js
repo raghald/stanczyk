@@ -27,6 +27,7 @@ module.exports = function smoke(win, app) {
     try {
       await wait(1200);
       results.startScreen = await js(`!document.querySelector('#start').hidden`);
+      results.noWatermark = await js(`![...document.querySelectorAll('.note')].some(n => !n.hidden && n.textContent.includes('@fritzglowacki'))`);
       await js(`(async () => {
         const mk = (t) => new Promise(r => { const c = document.createElement('canvas'); c.width = 400; c.height = 500; const x = c.getContext('2d');
           x.fillStyle = '#000'; x.fillRect(0, 0, 400, 500); x.fillStyle = '#fff'; x.font = '900 300px sans-serif'; x.fillText(t, 80, 360);
