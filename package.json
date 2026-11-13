@@ -13,11 +13,14 @@
     "build": "electron-builder --mac --arm64 --dir",
     "dist:mac": "electron-builder --mac",
     "dist:win": "electron-builder --win",
-    "dist": "electron-builder --mac --win"
+    "dist": "electron-builder --mac --win",
+    "build:3d": "node scripts/build-3d.js"
   },
   "devDependencies": {
     "electron": "33.2.1",
-    "electron-builder": "25.1.8"
+    "electron-builder": "25.1.8",
+    "esbuild": "0.24.0",
+    "three": "0.170.0"
   },
   "build": {
     "appId": "pl.bgs.stanczyk",
@@ -26,6 +29,8 @@
     "files": [
       "index.html",
       "material.js",
+      "three3d.js",
+      "i18n-en.js",
       "default-image.js",
       "desktop/**/*",
       "package.json",

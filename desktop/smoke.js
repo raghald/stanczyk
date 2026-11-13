@@ -35,11 +35,14 @@ module.exports = function smoke(win, app) {
         const dt = new DataTransfer(); for (const f of await Promise.all([mk('A'), mk('B')])) dt.items.add(f);
         document.querySelector('#stNew').click();
         await new Promise(r => setTimeout(r, 300));
+        window.__newStep = !document.querySelector('#setScrim').hidden && document.querySelector('#setTitle').textContent;
+        document.querySelector('#setDone').click();
         window.dispatchEvent(new DragEvent('drop', {dataTransfer: dt, bubbles: true, cancelable: true}));
         await new Promise(r => setTimeout(r, 800));
         [...document.querySelectorAll('md-filter-chip')].find(c => c.label === 'LED').click();
       })()`);
       await wait(600);
+      results.newProjectStep = await js(`window.__newStep`);
       results.dirtyAfterEdit = await js(`document.querySelector('#projName').classList.contains('dirty')`);
       send('saveAs'); await wait(1500);
       const saved = JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -50,6 +53,11 @@ module.exports = function smoke(win, app) {
       send('openPath', file); await wait(1500);
       results.afterOpen = await js(`[document.querySelector('#srcName').textContent, document.querySelector('#projName').textContent, document.querySelectorAll('.thumb:not(.add)').length, [...document.querySelectorAll('md-filter-chip')].filter(c => c.selected).map(c => c.label).includes('LED')]`);
       results.recent = (await js(`window.stanczykDesktop.recent()`)).map(r => r.name);
+      await js(`document.querySelector('#c-seqOn').click()`); // sekwencja wył. → bryła staje się źródłem
+      await wait(300);
+      await js(`[...document.querySelectorAll('md-filter-chip')].find(c => c.label === 'Torus').click()`);
+      await wait(2000);
+      results.m3 = await js(`[document.querySelector('#srcName').textContent, !!window.STANCZYK3D_LIB]`);
       await js(`document.querySelector('#c-cell').value = 20; document.querySelector('#c-cell').dispatchEvent(new Event('input'));`);
       await wait(300);
       results.dirtyBeforeClose = await js(`document.querySelector('#projName').classList.contains('dirty')`);

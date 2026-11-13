@@ -6,7 +6,11 @@ const fs = require('fs/promises');
 
 const EXT = 'stanczyk';
 const EXTS = [EXT, 'kropkarnia']; // .kropkarnia — projekty sprzed zmiany nazwy
-const FILTER = [{ name: 'Projekt Stańczyka', extensions: EXTS }];
+const FILTER = () => [{ name: T('Projekt Stańczyka'), extensions: EXTS }];
+// Język menu i okien systemowych: ustawiany przez okno aplikacji (app:lang); domyślnie polski
+const EN = {"Projekt Stańczyka": "Stańczyk project", "O Stańczyku": "About Stańczyk", "Ukryj Stańczyka": "Hide Stańczyk", "Ukryj pozostałe": "Hide Others", "Pokaż wszystko": "Show All", "Zakończ Stańczyka": "Quit Stańczyk", "Plik": "File", "Nowy projekt": "New Project", "Otwórz projekt…": "Open Project…", "Otwórz ostatnie": "Open Recent", "Wyczyść listę": "Clear List", "Brak ostatnich projektów": "No Recent Projects", "Ekran projektów": "Projects Screen", "Ustawienia projektu…": "Project Settings…", "Zapisz": "Save", "Zapisz jako…": "Save As…", "Zamknij okno": "Close Window", "Edycja": "Edit", "Cofnij": "Undo", "Ponów": "Redo", "Wytnij": "Cut", "Kopiuj": "Copy", "Wklej": "Paste", "Zaznacz wszystko": "Select All", "Widok": "View", "Odśwież": "Reload", "Narzędzia deweloperskie": "Developer Tools", "Powiększ podgląd": "Zoom In Preview", "Pomniejsz podgląd": "Zoom Out Preview", "Dopasuj podgląd do okna": "Fit Preview to Window", "Podgląd 100 %": "Preview 100%", "Pełny ekran": "Full Screen", "Okno": "Window", "Zapisz projekt": "Save Project", "Otwórz projekt": "Open Project", "Otwórz": "Open", "Zapisz plik": "Save File", "Nie zapisuj": "Don't Save", "Anuluj": "Cancel", "Bez tytułu": "Untitled", "Jeśli nie zapiszesz, wprowadzone zmiany przepadną.": "If you don't save, your changes will be lost."};
+let LANG = 'pl';
+const T = t => LANG === 'en' ? (EN[t] || t) : t;
 let win = null;
 let allowClose = false;
 let pendingOpen = null;
@@ -35,33 +39,34 @@ function buildMenu(recent = []) {
   const isMac = process.platform === 'darwin';
   const template = [
     ...(isMac ? [{ label: app.name, submenu: [
-      { role: 'about', label: 'O Stańczyku' }, { type: 'separator' },
-      { role: 'hide', label: 'Ukryj Stańczyka' }, { role: 'hideOthers', label: 'Ukryj pozostałe' }, { role: 'unhide', label: 'Pokaż wszystko' },
-      { type: 'separator' }, { role: 'quit', label: 'Zakończ Stańczyka' }] }] : []),
-    { label: 'Plik', submenu: [
-      { label: 'Nowy projekt', accelerator: 'CmdOrCtrl+N', click: () => send('new') },
-      { label: 'Otwórz projekt…', accelerator: 'CmdOrCtrl+O', click: () => send('open') },
-      { label: 'Otwórz ostatnie', submenu: recent.length
+      { role: 'about', label: T('O Stańczyku') }, { type: 'separator' },
+      { role: 'hide', label: T('Ukryj Stańczyka') }, { role: 'hideOthers', label: T('Ukryj pozostałe') }, { role: 'unhide', label: T('Pokaż wszystko') },
+      { type: 'separator' }, { role: 'quit', label: T('Zakończ Stańczyka') }] }] : []),
+    { label: T('Plik'), submenu: [
+      { label: T('Nowy projekt'), accelerator: 'CmdOrCtrl+N', click: () => send('new') },
+      { label: T('Otwórz projekt…'), accelerator: 'CmdOrCtrl+O', click: () => send('open') },
+      { label: T('Otwórz ostatnie'), submenu: recent.length
         ? [...recent.map(r => ({ label: r.name, click: () => send('openPath', r.path) })), { type: 'separator' },
-           { label: 'Wyczyść listę', click: async () => { await writeRecent([]); app.clearRecentDocuments(); send('recentChanged'); } }]
-        : [{ label: 'Brak ostatnich projektów', enabled: false }] },
-      { label: 'Ekran projektów', accelerator: 'CmdOrCtrl+Shift+P', click: () => send('showStart') },
+           { label: T('Wyczyść listę'), click: async () => { await writeRecent([]); app.clearRecentDocuments(); send('recentChanged'); } }]
+        : [{ label: T('Brak ostatnich projektów'), enabled: false }] },
+      { label: T('Ekran projektów'), accelerator: 'CmdOrCtrl+Shift+P', click: () => send('showStart') },
+      { label: T('Ustawienia projektu…'), accelerator: 'CmdOrCtrl+,', click: () => send('settings') },
       { type: 'separator' },
-      { label: 'Zapisz', accelerator: 'CmdOrCtrl+S', click: () => send('save') },
-      { label: 'Zapisz jako…', accelerator: 'CmdOrCtrl+Shift+S', click: () => send('saveAs') },
+      { label: T('Zapisz'), accelerator: 'CmdOrCtrl+S', click: () => send('save') },
+      { label: T('Zapisz jako…'), accelerator: 'CmdOrCtrl+Shift+S', click: () => send('saveAs') },
       { type: 'separator' },
-      { role: 'close', label: 'Zamknij okno' }] },
-    { label: 'Edycja', submenu: [
-      { role: 'undo', label: 'Cofnij' }, { role: 'redo', label: 'Ponów' }, { type: 'separator' },
-      { role: 'cut', label: 'Wytnij' }, { role: 'copy', label: 'Kopiuj' }, { role: 'paste', label: 'Wklej' }, { role: 'selectAll', label: 'Zaznacz wszystko' }] },
-    { label: 'Widok', submenu: [
-      { role: 'reload', label: 'Odśwież' }, { role: 'toggleDevTools', label: 'Narzędzia deweloperskie' }, { type: 'separator' },
-      { label: 'Powiększ podgląd', accelerator: 'CmdOrCtrl+=', click: () => send('zoomIn') },
-      { label: 'Pomniejsz podgląd', accelerator: 'CmdOrCtrl+-', click: () => send('zoomOut') },
-      { label: 'Dopasuj podgląd do okna', accelerator: 'CmdOrCtrl+0', click: () => send('zoomFit') },
-      { label: 'Podgląd 100 %', accelerator: 'CmdOrCtrl+1', click: () => send('zoom100') },
-      { type: 'separator' }, { role: 'togglefullscreen', label: 'Pełny ekran' }] },
-    { role: 'windowMenu', label: 'Okno' }
+      { role: 'close', label: T('Zamknij okno') }] },
+    { label: T('Edycja'), submenu: [
+      { role: 'undo', label: T('Cofnij') }, { role: 'redo', label: T('Ponów') }, { type: 'separator' },
+      { role: 'cut', label: T('Wytnij') }, { role: 'copy', label: T('Kopiuj') }, { role: 'paste', label: T('Wklej') }, { role: 'selectAll', label: T('Zaznacz wszystko') }] },
+    { label: T('Widok'), submenu: [
+      { role: 'reload', label: T('Odśwież') }, { role: 'toggleDevTools', label: T('Narzędzia deweloperskie') }, { type: 'separator' },
+      { label: T('Powiększ podgląd'), accelerator: 'CmdOrCtrl+=', click: () => send('zoomIn') },
+      { label: T('Pomniejsz podgląd'), accelerator: 'CmdOrCtrl+-', click: () => send('zoomOut') },
+      { label: T('Dopasuj podgląd do okna'), accelerator: 'CmdOrCtrl+0', click: () => send('zoomFit') },
+      { label: T('Podgląd 100 %'), accelerator: 'CmdOrCtrl+1', click: () => send('zoom100') },
+      { type: 'separator' }, { role: 'togglefullscreen', label: T('Pełny ekran') }] },
+    { role: 'windowMenu', label: T('Okno') }
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
@@ -85,8 +90,8 @@ function createWindow() {
 /* ---------- most z oknem ---------- */
 ipcMain.handle('project:choose-save', async (e, name) => {
   const r = await dialog.showSaveDialog(win, {
-    title: 'Zapisz projekt', buttonLabel: 'Zapisz',
-    defaultPath: path.join(app.getPath('documents'), (name || 'Bez tytułu') + '.' + EXT), filters: FILTER
+    title: T('Zapisz projekt'), buttonLabel: T('Zapisz'),
+    defaultPath: path.join(app.getPath('documents'), (name || T('Bez tytułu')) + '.' + EXT), filters: FILTER()
   });
   return r.canceled ? null : { path: r.filePath, name: baseName(r.filePath) };
 });
@@ -103,7 +108,7 @@ async function readProject(p) {
   return { path: p, name, text };
 }
 ipcMain.handle('project:open-dialog', async () => {
-  const r = await dialog.showOpenDialog(win, { title: 'Otwórz projekt', buttonLabel: 'Otwórz', properties: ['openFile'], filters: FILTER });
+  const r = await dialog.showOpenDialog(win, { title: T('Otwórz projekt'), buttonLabel: T('Otwórz'), properties: ['openFile'], filters: FILTER() });
   return r.canceled || !r.filePaths[0] ? null : readProject(r.filePaths[0]);
 });
 ipcMain.handle('project:read', (e, p) => readProject(p));
@@ -115,7 +120,7 @@ ipcMain.handle('recent:remove', async (e, p) => { await writeRecent((await readR
 ipcMain.handle('file:save', async (e, { name, data }) => {
   const ext = path.extname(name).slice(1);
   const r = await dialog.showSaveDialog(win, {
-    title: 'Zapisz plik', buttonLabel: 'Zapisz', defaultPath: path.join(app.getPath('downloads'), name),
+    title: T('Zapisz plik'), buttonLabel: T('Zapisz'), defaultPath: path.join(app.getPath('downloads'), name),
     filters: ext ? [{ name: ext.toUpperCase(), extensions: [ext] }] : []
   });
   if (r.canceled) return null;
@@ -124,8 +129,8 @@ ipcMain.handle('file:save', async (e, { name, data }) => {
 });
 ipcMain.handle('dialog:unsaved', async (e, name) => {
   const r = await dialog.showMessageBox(win, {
-    type: 'warning', buttons: ['Zapisz', 'Nie zapisuj', 'Anuluj'], defaultId: 0, cancelId: 2,
-    message: `Zapisać zmiany w projekcie „${name}”?`, detail: 'Jeśli nie zapiszesz, wprowadzone zmiany przepadną.'
+    type: 'warning', buttons: [T('Zapisz'), T('Nie zapisuj'), T('Anuluj')], defaultId: 0, cancelId: 2,
+    message: LANG === 'en' ? `Save changes to “${name}”?` : `Zapisać zmiany w projekcie „${name}”?`, detail: T('Jeśli nie zapiszesz, wprowadzone zmiany przepadną.')
   });
   return ['save', 'discard', 'cancel'][r.response];
 });
@@ -134,6 +139,7 @@ ipcMain.on('window:title', (e, { title, dirty, path: p }) => {
   if (process.platform === 'darwin') { win.setTitle(title); win.setDocumentEdited(!!dirty); win.setRepresentedFilename(p || ''); }
   else win.setTitle((dirty ? '● ' : '') + title);
 });
+ipcMain.on('app:lang', async (e, l) => { const n = l === 'en' ? 'en' : 'pl'; if (n === LANG) return; LANG = n; buildMenu(await readRecent()); });
 ipcMain.on('window:close-ok', () => { if (!win) return; allowClose = true; win.close(); });
 ipcMain.handle('shell:reveal', (e, p) => shell.showItemInFolder(p));
 

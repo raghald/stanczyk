@@ -15,5 +15,6 @@ contextBridge.exposeInMainWorld('stanczykDesktop', {
   confirmUnsaved: name => ipcRenderer.invoke('dialog:unsaved', name),
   setTitle: o => ipcRenderer.send('window:title', o),
   closeOk: () => ipcRenderer.send('window:close-ok'),
+  setLang: l => ipcRenderer.send('app:lang', l),
   onMenu: cb => ipcRenderer.on('menu', (e, action, arg) => cb(action, arg))
 });

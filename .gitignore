@@ -4,3 +4,4 @@ _test*
 *.webm
 node_modules/
 dist/
+src/font.json

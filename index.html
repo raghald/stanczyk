@@ -94,6 +94,11 @@ md-icon svg{width:100%;height:100%;fill:currentColor;display:block}
 .regbox .h[data-d=sw]{left:0;top:100%;cursor:nesw-resize}.regbox .h[data-d=w]{left:0;top:50%;cursor:ew-resize}
 .regbox .tag{position:absolute;left:0;top:-26px;padding:2px 8px;border-radius:4px;background:var(--md-sys-color-primary);color:var(--md-sys-color-on-primary);font:500 11px/18px var(--font-mono);white-space:nowrap;pointer-events:none}
 .imgbox{position:absolute;border:1.5px dashed var(--md-sys-color-primary);border-radius:2px;pointer-events:none}
+#cv.m3{cursor:grab}
+#cv.m3.rotating{cursor:grabbing}
+.tfield{display:flex;flex-direction:column;gap:4px;font:500 12px/16px var(--font-ui);letter-spacing:.5px;color:var(--md-sys-color-on-surface-variant)}
+.tfield input{height:48px;padding:0 14px;border-radius:4px;border:1px solid var(--md-sys-color-outline);background:transparent;color:var(--md-sys-color-on-surface);font:400 16px/24px var(--font-ui);outline:none}
+.tfield input:focus{border:2px solid var(--md-sys-color-primary);padding:0 13px}
 #cv.editing{cursor:grab}
 #cv.editing.dragging{cursor:grabbing}
 .gbody.frame{padding-top:0}
@@ -173,6 +178,7 @@ md-outlined-select{width:100%;min-width:0}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(1) contrast(1.1);pointer-events:none}
 .thumb.current{box-shadow:inset 0 0 0 3px var(--md-sys-color-primary)}
 .thumb.current img{opacity:.9}
+.thumb .kind{position:absolute;left:4px;top:4px;width:20px;height:20px;display:grid;place-items:center;border-radius:6px;background:rgba(0,0,0,.6);color:#fff;--md-icon-size:16px}
 .thumb .n{position:absolute;left:6px;bottom:4px;font:500 11px/16px var(--font-ui);color:#fff;text-shadow:0 0 3px #000,0 0 2px #000}
 .thumb .x{position:absolute;right:4px;top:4px;width:24px;height:24px;border-radius:50%;border:0;padding:3px;background:var(--md-sys-color-inverse-surface);color:var(--md-sys-color-inverse-on-surface);opacity:0;cursor:pointer}
 .thumb .x md-icon{--md-icon-size:18px}
@@ -217,6 +223,9 @@ md-outlined-select{width:100%;min-width:0}
 .dopts{display:flex;flex-direction:column;gap:16px}
 .drow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .dialog .check{min-height:32px}
+.setdlg{width:min(520px,100%)}
+.setdlg .sublabel{margin:8px 0 -4px}
+.setdlg md-outlined-select{width:100%}
 #exCode{width:100%;height:180px;resize:vertical;padding:12px;border-radius:8px;border:1px solid var(--md-sys-color-outline-variant);background:var(--md-sys-color-surface-container-lowest);color:var(--md-sys-color-on-surface-variant);font:400 11px/16px var(--font-mono);white-space:pre;overflow:auto}
 .dactions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px}
 @media (max-width:560px){ .drow{grid-template-columns:1fr} }
@@ -234,6 +243,17 @@ md-outlined-select{width:100%;min-width:0}
 .pop-x:hover{background:var(--md-sys-color-surface-container-highest);color:var(--md-sys-color-on-surface)}
 .pop-x md-icon{--md-icon-size:20px}
 .pop .gbody{padding-top:0}
+.phead{display:flex;align-items:center;justify-content:space-between;padding:4px 12px 4px 24px;font:500 12px/16px var(--font-ui);letter-spacing:.5px;color:var(--md-sys-color-on-surface-variant)}
+.pcoll{display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:50%;background:none;color:var(--md-sys-color-on-surface-variant);cursor:pointer;padding:0;position:relative}
+.pcoll:hover{background:var(--md-sys-color-surface-container-highest);color:var(--md-sys-color-on-surface)}
+.pcoll md-icon{transform:rotate(-90deg)}
+.prail{display:none;flex-direction:column;align-items:center;gap:8px;padding:8px 0 16px}
+.prail .pcoll md-icon{transform:rotate(90deg)}
+.app.pcol{grid-template-columns:80px minmax(0,1fr) 88px}
+.app.pcol .panel{padding:0}
+.app.pcol .panel > .group,.app.pcol .panel > .phead{display:none}
+.app.pcol .prail{display:flex}
+.prail .rail-btn{width:80px;text-align:center}
 
 @media (max-width:900px){
   .rail{flex-direction:row;justify-content:center;padding:6px 8px}
@@ -246,6 +266,12 @@ md-outlined-select{width:100%;min-width:0}
   .stage{padding:16px max(16px,env(safe-area-inset-left,0px))}
   .status .hint{display:none}
   .panel{overflow:visible}
+  .app.pcol{grid-template-columns:1fr}
+  .app.pcol .panel{padding:8px 0 32px}
+  .app.pcol .panel > .group{display:flex}
+  .app.pcol .panel > .phead{display:flex}
+  .app.pcol .prail{display:none}
+  .pcoll{display:none}
   .group{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -256,14 +282,16 @@ md-outlined-select{width:100%;min-width:0}
   <header class="bar">
     <div class="brand"><span class="logo" aria-hidden="true"><i></i><i></i><i></i><i></i></span>Stańczyk</div>
     <span class="projname" id="projName" hidden></span>
-    <md-filled-tonal-button id="btnOpen"><md-icon aria-hidden="true" slot="icon"><svg viewBox="0 -960 960 960"><path d="M450-313v-371L330-564l-43-43 193-193 193 193-43 43-120-120v371h-60ZM220-160q-24 0-42-18t-18-42v-143h60v143h520v-143h60v143q0 24-18 42t-42 18H220Z"/></svg></md-icon>Wgraj zdjęcie lub wideo</md-filled-tonal-button>
-    <input type="file" id="file" accept="image/*,video/*" multiple hidden>
-    <input type="file" id="seqFile" accept="image/*" multiple hidden>
+    <md-filled-tonal-button id="btnOpen"><md-icon aria-hidden="true" slot="icon"><svg viewBox="0 -960 960 960"><path d="M450-313v-371L330-564l-43-43 193-193 193 193-43 43-120-120v371h-60ZM220-160q-24 0-42-18t-18-42v-143h60v143h520v-143h60v143q0 24-18 42t-42 18H220Z"/></svg></md-icon>Wgraj plik</md-filled-tonal-button>
+    <input type="file" id="file" accept="image/*,video/*,.glb,.gltf,.obj,.stl" multiple hidden>
+    <input type="file" id="file3d" accept=".glb,.gltf,.obj,.stl" hidden>
+    <input type="file" id="seqFile" accept="image/*,video/*,.glb,.gltf,.obj,.stl" multiple hidden>
     <div class="filepill" id="filePill" title="Bieżące źródło">
       <span id="srcIcon"><md-icon aria-hidden="true"><svg viewBox="0 -960 960 960"><path d="M180-120q-24 0-42-18t-18-42v-600q0-24 18-42t42-18h600q24 0 42 18t18 42v600q0 24-18 42t-42 18H180Zm0-60h600v-600H180v600Zm56-97h489L578-473 446-302l-93-127-117 152Zm-56 97v-600 600Z"/></svg></md-icon></span><span id="srcName">przyklad.png</span><span id="srcMeta"></span>
     </div>
     <div class="grow"></div>
     <md-icon-button id="btnPlay" aria-label="Pauza" title="Pauza (spacja)"></md-icon-button>
+    <md-icon-button id="btnSettings" aria-label="Ustawienia projektu" title="Ustawienia projektu: scena i nagrywanie (⌘,)"><md-icon aria-hidden="true"><svg viewBox="0 -960 960 960"><path d="M440-120v-240h80v80h320v80H520v80h-80Zm-320-80v-80h240v80H120Zm160-160v-80H120v-80h160v-80h80v240h-80Zm160-80v-80h400v80H440Zm160-160v-240h80v80h160v80H680v80h-80Zm-480-80v-80h400v80H120Z"/></svg></md-icon></md-icon-button>
     <md-outlined-button id="btnCode"><md-icon aria-hidden="true" slot="icon"><svg viewBox="0 -960 960 960"><path d="M320-242 80-482l242-242 43 43-199 199 197 197-43 43Zm318 2-43-43 199-199-197-197 43-43 240 240-242 242Z"/></svg></md-icon>Kod na stronę</md-outlined-button>
     <md-outlined-button id="btnPng"><md-icon aria-hidden="true" slot="icon"><svg viewBox="0 -960 960 960"><path d="M180-120q-24 0-42-18t-18-42v-600q0-24 18-42t42-18h600q24 0 42 18t18 42v600q0 24-18 42t-42 18H180Zm0-60h600v-600H180v600Zm56-97h489L578-473 446-302l-93-127-117 152Zm-56 97v-600 600Z"/></svg></md-icon>Zapisz PNG</md-outlined-button>
     <md-filled-button id="btnRec"><md-icon aria-hidden="true" slot="icon" class="i-rec"><svg viewBox="0 -960 960 960"><path d="M282.5-282.5Q200-365 200-480t82.5-197.5Q365-760 480-760t197.5 82.5Q760-595 760-480t-82.5 197.5Q595-200 480-200t-197.5-82.5Z"/></svg></md-icon><md-icon aria-hidden="true" slot="icon" class="i-stop"><svg viewBox="0 -960 960 960"><path d="M240-240v-480h480v480H240Z"/></svg></md-icon><span id="recLabel">Nagraj wideo</span></md-filled-button>
@@ -278,7 +306,7 @@ md-outlined-select{width:100%;min-width:0}
       <div class="ring" id="ring" hidden></div>
       <div class="imgbox" id="imgbox" hidden></div>
       <div class="regbox" id="regbox" hidden><span class="tag" id="regtag"></span><i class="h" data-d="nw"></i><i class="h" data-d="n"></i><i class="h" data-d="ne"></i><i class="h" data-d="e"></i><i class="h" data-d="se"></i><i class="h" data-d="s"></i><i class="h" data-d="sw"></i><i class="h" data-d="w"></i></div>
-      <div class="drop" id="drop" hidden>Upuść zdjęcie lub wideo</div>
+      <div class="drop" id="drop" hidden>Upuść zdjęcie, wideo albo model 3D</div>
     </div>
     <div class="transport" id="transport" hidden>
       <span id="tCur">0:00</span>
@@ -321,6 +349,17 @@ md-outlined-select{width:100%;min-width:0}
     </div>
   </div>
 </div>
+<div class="scrim" id="setScrim" hidden>
+  <div class="dialog setdlg" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+    <h2 id="setTitle">Ustawienia projektu</h2>
+    <p class="dsub" id="setInfo"></p>
+    <div class="dopts" id="setBody"></div>
+    <div class="dactions">
+      <md-text-button id="setBack" hidden>Wróć do ekranu projektów</md-text-button>
+      <md-filled-button id="setDone">Gotowe</md-filled-button>
+    </div>
+  </div>
+</div>
 <div class="start" id="start" hidden>
   <div class="start-in">
     <div class="start-head">
@@ -339,12 +378,60 @@ md-outlined-select{width:100%;min-width:0}
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <script src="material.js"></script>
 <script src="default-image.js"></script>
+<script src="i18n-en.js"></script>
 
 <script>
 (() => {
 'use strict';
 const $ = s => document.querySelector(s);
 const TAU = Math.PI * 2;
+
+/* ================= Język: polski albo angielski ================= */
+// Teksty w kodzie są po polsku; w wersji angielskiej tłumaczymy je tam, gdzie trafiają na ekran (tr).
+// Słownik jest w i18n-en.js; klucze z {0}, {1} pasują do tekstów ze wstawkami (nazwy plików, liczby).
+const LANG_KEY = 'stanczyk:lang';
+let lang = 'pl';
+// aplikacja desktopowa domyślnie po polsku; wersja w przeglądarce według języka przeglądarki
+try { lang = localStorage.getItem(LANG_KEY) || (window.stanczykDesktop || /^pl\b/i.test(navigator.language || '') ? 'pl' : 'en'); } catch (e) {}
+if (lang !== 'en') lang = 'pl';
+document.documentElement.lang = lang;
+const EN = window.STANCZYK_EN || {};
+const trPat = Object.keys(EN).filter(k => /\{\d\}/.test(k)).sort((a, b) => b.length - a.length).map(k => {
+  const idx = [], parts = k.split(/\{(\d)\}/);
+  let re = '^';
+  parts.forEach((x, i) => { if (i % 2) { idx.push(+x); re += '([\\s\\S]+?)'; } else re += x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
+  return {re:new RegExp(re + '$'), idx, val:EN[k]};
+});
+const trCache = new Map(), trMiss = new Set();
+function tr(s){
+  if (lang === 'pl' || s == null) return s;
+  s = String(s);
+  if (Object.prototype.hasOwnProperty.call(EN, s)) return EN[s];
+  let r = trCache.get(s); if (r !== undefined) return r;
+  r = s;
+  for (const p of trPat) { const m = p.re.exec(s); if (m) { r = p.val.replace(/\{(\d)\}/g, (_, d) => tr(m[p.idx.indexOf(+d) + 1])); break; } }
+  if (r === s && /[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/.test(s)) trMiss.add(s);
+  if (trCache.size > 3000) trCache.clear();
+  trCache.set(s, r); return r;
+}
+window.__stanczykMissing = () => [...trMiss];
+const trKeep = t => { const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(t); return m[2] ? m[1] + tr(m[2]) + m[3] : t; };
+// Tłumaczy tekst między znacznikami i atrybuty aria-label/title/label w gotowym kawałku HTML
+const trHTML = h => lang === 'pl' ? h : h.replace(/>([^<>]+)</g, (m, t) => '>' + trKeep(t) + '<').replace(/\b(aria-label|title|label)="([^"]+)"/g, (m, a, v) => `${a}="${tr(v).replace(/"/g, '&quot;')}"`);
+function i18nStatic(){
+  if (lang === 'pl') return;
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {acceptNode:n => n.nodeType === 1 && /^(SCRIPT|STYLE|TEXTAREA|svg)$/i.test(n.nodeName) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT});
+  for (let n = w.nextNode(); n; n = w.nextNode()) {
+    if (n.nodeType === 3) { if (/\S/.test(n.nodeValue)) n.nodeValue = trKeep(n.nodeValue); continue; }
+    for (const a of ['aria-label', 'title', 'label', 'placeholder']) if (n.hasAttribute(a)) n.setAttribute(a, tr(n.getAttribute(a)));
+  }
+}
+i18nStatic();
+function setLang(v){
+  if (v === lang) return;
+  const go = () => { try { localStorage.setItem(LANG_KEY, v); } catch (e) {} if (window.stanczykDesktop) window.stanczykDesktop.setLang(v); location.reload(); };
+  if (window.stanczykDesktop && typeof confirmLeave === 'function') confirmLeave().then(ok => { if (ok) { proj.dirty = false; go(); } }); else go();
+}
 
 /* ================= Ustawienia ================= */
 const LOOK = {
@@ -361,7 +448,10 @@ const OUT = { aspect:'source', res:1080, fps:30, recSec:8, recClip:true,
   seqOn:false, seqType:'scatter', seqHold:2.5, seqTrans:2.2, seqForce:1, seqLoop:true,
   region:false, outside:'photo', rx:0.05, ry:0.08, rw:0.56, rh:0.62,
   inType:'none', inDur:1.8, outType:'none', outDur:1.8, showHold:3, outAfter:'repeat', showGap:0.6 };
-const DEFAULTS = {...LOOK, ...OUT};
+// Scena 3D: bryła, obrót, światło, materiał, ton z głębi
+const M3 = { m3shape:'sphere', m3text:'Stańczyk', m3spin:30, m3axis:'y', m3rx:-12, m3ry:0, m3zoom:1,
+  m3mat:'matte', m3orig:false, m3az:-40, m3el:35, m3light:2.4, m3amb:0.12, m3depth:0, m3anim:true };
+const DEFAULTS = {...LOOK, ...OUT, ...M3};
 
 const STYLES = {
   halftone:{shape:'circle', map:'size',    angle:45, scale:1.3,  grid:'square', jitter:0},
@@ -417,7 +507,7 @@ const lum3 = c => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 /* ================= WebGL ================= */
 const cv = $('#cv');
 const gl = cv.getContext('webgl2', {antialias:false, preserveDrawingBuffer:true, alpha:false, premultipliedAlpha:false});
-if (!gl) { $('#wrap').innerHTML = '<p class="glerr">Ta przeglądarka nie obsługuje WebGL 2, więc podgląd nie może działać. Otwórz plik w aktualnym Chrome, Safari lub Firefoksie.</p>'; return; }
+if (!gl) { $('#wrap').innerHTML = trHTML('<p class="glerr">Ta przeglądarka nie obsługuje WebGL 2, więc podgląd nie może działać. Otwórz plik w aktualnym Chrome, Safari lub Firefoksie.</p>'); return; }
 
 const VS_PTS = `#version 300 es
 in vec2 a_pos; in float a_size; in vec4 a_col; in float a_glyph;
@@ -592,14 +682,36 @@ function sampleFrom(elm, w, h, pos){
   for (let i = 0, j = 0; i < n; i++, j += 4) L[i] = (0.2126 * d[j] + 0.7152 * d[j + 1] + 0.0722 * d[j + 2]) / 255;
   return {L, D:d};
 }
+// Scena 3D renderuje się do własnego płótna, które próbkujemy w każdej klatce jak wideo
+function tick3D(dt){
+  if (!src || src.type !== '3d' || !src.m3 || seqActive()) return;
+  const k = Math.min(1, 960 / Math.max(W, H)), w = Math.max(2, Math.round(W * k)), h = Math.max(2, Math.round(H * k));
+  if (S.aspect !== 'source' && (src.w !== w || src.h !== h)) { src.w = w; src.h = h; }
+  src.m3.setSize(src.w, src.h);
+  src.m3.update(playing ? dt : 0, S);
+  src.fr = (src.fr || 0) + 1; sampleDirty = true;
+}
 function drawSample(){
   if (!src) return;
   const r = sampleFrom(src.el, src.w, src.h, src.pos);
   LUM = r.L; RGB = r.D;
   sampleDirty = false;
 }
+// Wideo i bryły 3D w sekwencji zmieniają się co klatkę: odświeżamy je raz na klatkę, tylko gdy są na ekranie
+function tickLive(it){
+  if (it.tk === FRN) return; it.tk = FRN;
+  if (it.type === '3d') {
+    if (!it.m3) return;
+    if (S.aspect !== 'source' || seq.items[0] !== it) { const k = Math.min(1, 960 / Math.max(W, H)), w = Math.max(2, Math.round(W * k)), h = Math.max(2, Math.round(H * k)); if (it.w !== w || it.h !== h) { it.w = w; it.h = h; } }
+    it.m3.setSize(it.w, it.h); it.m3.update(playing ? DT : 0, it.p3 || S); it.fr = (it.fr || 0) + 1;
+  } else if (it.type === 'video') {
+    const v = it.el; if (playing && v.paused) v.play().catch(() => {}); else if (!playing && !v.paused) v.pause();
+    if (v.readyState >= 2 && v.currentTime !== it.lt) { it.lt = v.currentTime; it.fr = (it.fr || 0) + 1; }
+  }
+}
 function ensureSample(item){
-  if (item.ver === sampleVer) return;
+  if (item.live) { tickLive(item); if (item.ver === sampleVer && item.sf === item.fr) return; item.sf = item.fr; }
+  else if (item.ver === sampleVer) return;
   const r = sampleFrom(item.el, item.w, item.h, item.pos);
   item.L = r.L; item.D = r.D; item.ver = sampleVer;
 }
@@ -653,13 +765,13 @@ function regen(){
 }
 
 /* ================= Symulacja ================= */
-let T = 0;
+let T = 0, FRN = 0, DT = 0;
 const mouse = {x:0, y:0, active:false};
 
 /* ================= Sekwencja zdjęć ================= */
 const seq = {items:[], cur:-1};
 let seqT = 0, seqRun = null, morph = null, MA = new Float32Array(8), MB = new Float32Array(8);
-const photos = n => { const m10 = n % 10, m100 = n % 100; return n + ' ' + (n === 1 ? 'zdjęcie' : (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) ? 'zdjęcia' : 'zdjęć'); };
+const photos = n => { if (lang === 'en') return n + (n === 1 ? ' element' : ' elements'); const m10 = n % 10, m100 = n % 100; return n + ' ' + (n === 1 ? 'element' : (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) ? 'elementy' : 'elementów'); };
 const seqActive = () => S.seqOn && seq.items.length >= 2;
 const seqCycle = () => S.seqHold + S.seqTrans;
 const seqSpan = () => S.seqLoop ? seq.items.length * seqCycle() : (seq.items.length - 1) * seqCycle() + S.seqHold;
@@ -683,6 +795,8 @@ function seqUpdate(dt, once){
     const key = [idx, sampleVer, gridVer, lookVer].join(':');
     if (!morph || morph.key !== key) buildPairs(key, A, next);
   }
+  // wideo, którego nie widać, stoi
+  for (const it of seq.items) if (it.type === 'video' && it !== A && !(prep && it === next) && !it.el.paused) it.el.pause();
   LUM = A.L; RGB = A.D;
   seqRun = B ? {p, type:S.seqType, LB:B.L, DB:B.D, idx, Ai:A, Bi:B} : null;
   if (idx !== seq.cur) { seq.cur = idx; markThumbs(); }
@@ -764,10 +878,12 @@ function buildPairs(key, A, B){
   ia.sort((p, q) => kA[p] - kA[q]); ib.sort((p, q) => kB[p] - kB[q]);
   morph = {key, ia, ib};
 }
+// Siła migotania jednostki i w chwili t (0 = zgaszona)
+function twk(i, t){ const n = noise(SA[i] * 61.3, SB[i] * 47.1, t * 2.2); return n > 0.2 ? Math.min(1, (n - 0.2) * 3.5) : 0; }
 // Tory kropek: na początku dokładnie siatka A, na końcu dokładnie siatka B; po drodze ruch zależny od stylu
 function stepMorph(p, type, mode){
   const {ia, ib} = morph, b = buf, short = Math.min(W, H), force = S.seqForce;
-  const cxF = W / 2, cyF = H / 2, tF = force * short, tR = force * 3;
+  const cxF = W / 2, cyF = H / 2, tF = force * short, tR = force * 3, tw = S.twinkle;
   let k = 0;
   for (let j = 0; j < N; j++) {
     const ai = ia[j], bi = ib[j], oa = ai * 8, ob = bi * 8;
@@ -804,32 +920,35 @@ function stepMorph(p, type, mode){
     if (sz < 0.35) continue;
     const w = k * 8;
     b[w] = x; b[w + 1] = y;
-    b[w + 2] = sz;
-    b[w + 3] = MA[oa + 3] + (MB[ob + 3] - MA[oa + 3]) * t;
-    b[w + 4] = MA[oa + 4] + (MB[ob + 4] - MA[oa + 4]) * t;
-    b[w + 5] = MA[oa + 5] + (MB[ob + 5] - MA[oa + 5]) * t;
+    let r = MA[oa + 3] + (MB[ob + 3] - MA[oa + 3]) * t, g = MA[oa + 4] + (MB[ob + 4] - MA[oa + 4]) * t, bl = MA[oa + 5] + (MB[ob + 5] - MA[oa + 5]) * t;
     // niewidoczny koniec dziedziczy krycie widocznego, żeby kropka rosła/malała, a nie mrugała
     const aA = sA < 0.35 ? MB[ob + 6] : MA[oa + 6], aB = sB < 0.35 ? MA[oa + 6] : MB[ob + 6];
-    b[w + 6] = aA + (aB - aA) * t;
+    let a = aA + (aB - aA) * t;
+    // migotanie diod jak poza przejściem: na starcie liczone dla kropki z A, na końcu dla kropki z B
+    if (tw > 0) {
+      const kA = twk(ai, T), kB = twk(bi, T), kk = (kA + (kB - kA) * t) * tw;
+      if (kk > 0) { sz *= 1 + kk * 0.5; a = Math.min(1, a + kk); r += (1 - r) * kk * 0.75; g += (1 - g) * kk * 0.75; bl += (1 - bl) * kk * 0.75; }
+    }
+    b[w + 2] = sz; b[w + 3] = r; b[w + 4] = g; b[w + 5] = bl;
+    b[w + 6] = a;
     b[w + 7] = t < 0.5 ? (sA < 0.35 ? MB[ob + 7] : MA[oa + 7]) : (sB < 0.35 ? MA[oa + 7] : MB[ob + 7]);
     k++;
   }
   return k;
 }
-function addToSequence(files){
-  const imgs = [...files].filter(f => f.type.startsWith('image/') || /\.(png|jpe?g|gif|webp|avif|bmp)$/i.test(f.name));
-  if (imgs.length < files.length) toast('Do sekwencji trafiają tylko zdjęcia. Wideo otwórz osobno przyciskiem „Wgraj”.');
-  if (!imgs.length) return;
-  let left = imgs.length;
-  const wasActive = seqActive();
-  imgs.forEach(f => {
-    const url = URL.createObjectURL(f), im = new Image();
-    const item = {el:im, url, name:f.name, w:0, h:0, ver:-1, ok:false, pos:{x:0, y:0, z:1}, blob:f};
-    seq.items.push(item);
-    im.onload = () => { item.w = im.naturalWidth; item.h = im.naturalHeight; item.ok = true; if (--left === 0) seqLoaded(wasActive); };
-    im.onerror = () => { seq.items.splice(seq.items.indexOf(item), 1); URL.revokeObjectURL(url); if (--left === 0) seqLoaded(wasActive); };
-    im.src = url;
-  });
+async function addToSequence(files){
+  files = [...files]; if (!files.length) return;
+  const wasActive = seqActive(); let bad = 0;
+  for (const f of files) {
+    try {
+      if (MODEL_RE.test(f.name)) { const ext = f.name.split('.').pop().toLowerCase(); seq.items.push(await item3D({...m3Pick(S), m3shape:'model'}, {buf:await f.arrayBuffer(), ext, name:f.name, data:await blobToDataURL(f)})); }
+      else if (isVidFile(f)) { const url = URL.createObjectURL(f); try { seq.items.push(await itemVideo(url, f.name, {path:DESK ? DESK.pathForFile(f) : null, file:f})); } catch (e) { URL.revokeObjectURL(url); throw e; } }
+      else if (isImgFile(f)) { const url = URL.createObjectURL(f); try { const im = await loadImg(url); seq.items.push({el:im, url, name:f.name, w:im.naturalWidth, h:im.naturalHeight, ver:-1, ok:true, pos:{x:0, y:0, z:1}, blob:f}); } catch (e) { URL.revokeObjectURL(url); throw e; } }
+      else bad++;
+    } catch (e) { bad++; }
+  }
+  if (bad) toast(`Pominięto ${bad} ${bad === 1 ? 'plik' : 'pliki'}: do sekwencji trafiają zdjęcia, wideo (MP4, MOV, WebM) i modele 3D (GLB, GLTF, OBJ, STL).`);
+  seqLoaded(wasActive);
 }
 function seqLoaded(wasActive){
   if (seq.items.length >= 2 && !S.seqOn) { S.seqOn = true; seqT = 0; }
@@ -948,7 +1067,7 @@ function step(){
       if (w > 0 && !trE) { r += (DB[q] / 255 - r) * w; gg += (DB[q + 1] / 255 - gg) * w; bb += (DB[q + 2] / 255 - bb) * w; } }
     else if (cm === 'duo') { r = fgc[0] + (fg2[0] - fgc[0]) * c; gg = fgc[1] + (fg2[1] - fgc[1]) * c; bb = fgc[2] + (fg2[2] - fgc[2]) * c; }
     else { r = fgc[0]; gg = fgc[1]; bb = fgc[2]; }
-    if (tw > 0) { const n = noise(SA[i] * 61.3, SB[i] * 47.1, t * 2.2); if (n > 0.2) { const kk = Math.min(1, (n - 0.2) * 3.5) * tw; s *= 1 + kk * 0.5; a = Math.min(1, a + kk); r += (1 - r) * kk * 0.75; gg += (1 - gg) * kk * 0.75; bb += (1 - bb) * kk * 0.75; } }
+    if (tw > 0) { const kk0 = twk(i, t); if (kk0 > 0) { const kk = kk0 * tw; s *= 1 + kk * 0.5; a = Math.min(1, a + kk); r += (1 - r) * kk * 0.75; gg += (1 - gg) * kk * 0.75; bb += (1 - bb) * kk * 0.75; } }
     const o = k * 8;
     b[o] = x; b[o + 1] = y; b[o + 2] = s; b[o + 3] = r; b[o + 4] = gg; b[o + 5] = bb; b[o + 6] = a; b[o + 7] = g;
     k++;
@@ -962,7 +1081,7 @@ function upData(tex, data, w, h){
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
 }
 function upPhoto(tex, it, slot){
-  const key = [it.pv || 0, W, H, S.fit, S.zoom, S.bg, it.el && it.el.tagName === 'VIDEO' ? it.el.currentTime : 0].join('|');
+  const key = [it.pv || 0, W, H, S.fit, S.zoom, S.bg, it.el && it.el.tagName === 'VIDEO' ? it.el.currentTime : it.fr || 0].join('|');
   if (up[slot] === it && up[slot + 'k'] === key) return;
   up[slot] = it; up[slot + 'k'] = key;
   const ps = it.pos || {x:0, y:0, z:1};
@@ -1053,8 +1172,10 @@ function frame(now){
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   if (dt > 0) fps += (1 / dt - fps) * 0.05;
   if (playing) T += dt * S.speed;
+  FRN++; DT = dt;
   const vid = src && src.type === 'video' && !seqActive() ? src.el : null;
   if (vid && vid.readyState >= 2 && vid.currentTime !== lastVideoTime) { lastVideoTime = vid.currentTime; sampleDirty = true; }
+  tick3D(dt);
   const handled = showUpdate(dt);
   if (!scrubbing) {
     if (showOn()) { const span = showSpan(), t = Math.min(showT, span); $('#scrub').value = t / span; $('#tCur').textContent = fmtTime(t); $('#tDur').textContent = fmtTime(span); }
@@ -1074,19 +1195,19 @@ function frame(now){
 
 /* ================= Interfejs ================= */
 const fmtTime = s => { s = Math.max(0, s || 0); const m = Math.floor(s / 60), r = Math.floor(s % 60); return m + ':' + String(r).padStart(2, '0'); };
-const nf = new Intl.NumberFormat('pl-PL');
+const nf = new Intl.NumberFormat(lang === 'en' ? 'en-GB' : 'pl-PL');
 function updateHud(){
-  const rec = recorder ? ` · nagrywanie ${fmtTime((performance.now() - recStart) / 1000)}` : '';
-  const sq = seqActive() ? ` · zdjęcie ${seq.cur + 1}/${seq.items.length}${seqRun && seqRun.p > 0 ? ' → ' + ((seqRun.idx + 1) % seq.items.length + 1) : ''}` : '';
-  const ph = showEmpty ? ' · pusty kadr' : seqRun && seqRun.mode === 'in' ? ' · wejście' : seqRun && seqRun.mode === 'out' ? ' · wyjście' : '';
-  $('#hud').textContent = `${W}×${H} · ${nf.format(lastCount)} jednostek · ${Math.round(fps)} kl/s${sq}${ph}${rec}`;
-  if (recorder) $('#recLabel').textContent = 'Zatrzymaj · ' + fmtTime((performance.now() - recStart) / 1000);
+  const rec = recorder ? ` · ${tr('nagrywanie')} ${fmtTime((performance.now() - recStart) / 1000)}` : '';
+  const sq = seqActive() ? ` · ${tr('element')} ${seq.cur + 1}/${seq.items.length}${seqRun && seqRun.p > 0 ? ' → ' + ((seqRun.idx + 1) % seq.items.length + 1) : ''}` : '';
+  const ph = showEmpty ? ' · ' + tr('pusty kadr') : seqRun && seqRun.mode === 'in' ? ' · ' + tr('wejście') : seqRun && seqRun.mode === 'out' ? ' · ' + tr('wyjście') : '';
+  $('#hud').textContent = `${W}×${H} · ${nf.format(lastCount)} ${tr('jednostek')} · ${Math.round(fps)} ${tr('kl/s')}${sq}${ph}${rec}`;
+  if (recorder) $('#recLabel').textContent = tr('Zatrzymaj') + ' · ' + fmtTime((performance.now() - recStart) / 1000);
 }
 let toastT = 0;
-function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3200); }
+function toast(msg){ const t = $('#toast'); t.textContent = tr(msg); t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3200); }
 function setRangeFill(){}
 
-const ICONS = {"remove": "M200-450v-60h560v60H200Z", "fit_screen": "M820-610v-130H690v-60h130q24 0 42 18t18 42v130h-60Zm-740 0v-130q0-24 18-42t42-18h130v60H140v130H80Zm610 450v-60h130v-130h60v130q0 24-18 42t-42 18H690Zm-550 0q-24 0-42-18t-18-42v-130h60v130h130v60H140Zm60-120v-400h560v400H200Zm60-60h440v-280H260v280Zm0 0v-280 280Z", "category": "m261-526 220-354 220 354H261ZM706-80q-74 0-124-50t-50-124q0-74 50-124t124-50q74 0 124 50t50 124q0 74-50 124T706-80Zm-586-25v-304h304v304H120Zm586.08-35Q754-140 787-173.08q33-33.09 33-81Q820-302 786.92-335q-33.09-33-81-33Q658-368 625-334.92q-33 33.09-33 81Q592-206 625.08-173q33.09 33 81 33ZM180-165h184v-184H180v184Zm189-421h224L481-767 369-586Zm112 0ZM364-349Zm342 95Z", "grain": "M229.91-160q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm-170-165q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm-500-170q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm-170-165q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Z", "palette": "M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-85 32-158t87.5-127q55.5-54 130-84.5T489-880q79 0 150 26.5T763.5-780q53.5 47 85 111.5T880-527q0 108-63 170.5T650-294h-75q-18 0-31 14t-13 31q0 27 14.5 46t14.5 44q0 38-21 58.5T480-80Zm0-400Zm-198 11q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15Zm126-170q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15Zm214 0q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15Zm131 170q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15ZM480-140q11 0 15.5-4.5T500-159q0-14-14.5-26T471-238q0-46 30-81t76-35h73q76 0 123-44.5T820-527q0-132-100-212.5T489-820q-146 0-247.5 98.5T140-480q0 141 99.5 240.5T480-140Z", "flare": "M40-450v-60h232v60H40Zm271-157-80-80 42-42 80 80-42 42Zm139-81v-232h60v232h-60Zm199 81-42-42 80-80 42 42-80 80Zm39 157v-60h232v60H688Zm-280.5 42.5Q378-437 378-480t29.5-72.5Q437-582 480-582t72.5 29.5Q582-523 582-480t-29.5 72.5Q523-378 480-378t-72.5-29.5ZM692-226l-85-85 42-42 85 85-42 42Zm-424 0-42-42 85-85 42 42-85 85ZM450-40v-232h60v232h-60Z", "upload": "M450-313v-371L330-564l-43-43 193-193 193 193-43 43-120-120v371h-60ZM220-160q-24 0-42-18t-18-42v-143h60v143h520v-143h60v143q0 24-18 42t-42 18H220Z", "image": "M180-120q-24 0-42-18t-18-42v-600q0-24 18-42t42-18h600q24 0 42 18t18 42v600q0 24-18 42t-42 18H180Zm0-60h600v-600H180v600Zm56-97h489L578-473 446-302l-93-127-117 152Zm-56 97v-600 600Z", "record": "M282.5-282.5Q200-365 200-480t82.5-197.5Q365-760 480-760t197.5 82.5Q760-595 760-480t-82.5 197.5Q595-200 480-200t-197.5-82.5Z", "stop": "M240-240v-480h480v480H240Z", "pause": "M555-200v-560h175v560H555Zm-325 0v-560h175v560H230Z", "play": "M320-203v-560l440 280-440 280Z", "down": "M480-344 240-584l43-43 197 197 197-197 43 43-240 240Z", "close": "m249-207-42-42 231-231-231-231 42-42 231 231 231-231 42 42-231 231 231 231-42 42-231-231-231 231Z", "add": "M450-450H200v-60h250v-250h60v250h250v60H510v250h-60v-250Z", "check": "M378-246 154-470l43-43 181 181 384-384 43 43-427 427Z", "movie": "m140-800 74 152h130l-74-152h89l74 152h130l-74-152h89l74 152h130l-74-152h112q24 0 42 18t18 42v520q0 24-18 42t-42 18H140q-24 0-42-18t-18-42v-520q0-24 18-42t42-18Zm0 212v368h680v-368H140Zm0 0v368-368Z", "photos": "M345-377h391L609-548 506-413l-68-87-93 123Zm-85 177q-24 0-42-18t-18-42v-560q0-24 18-42t42-18h560q24 0 42 18t18 42v560q0 24-18 42t-42 18H260Zm0-60h560v-560H260v560ZM140-80q-24 0-42-18t-18-42v-620h60v620h620v60H140Zm120-740v560-560Z"};
+const ICONS = {"remove": "M200-450v-60h560v60H200Z", "fit_screen": "M820-610v-130H690v-60h130q24 0 42 18t18 42v130h-60Zm-740 0v-130q0-24 18-42t42-18h130v60H140v130H80Zm610 450v-60h130v-130h60v130q0 24-18 42t-42 18H690Zm-550 0q-24 0-42-18t-18-42v-130h60v130h130v60H140Zm60-120v-400h560v400H200Zm60-60h440v-280H260v280Zm0 0v-280 280Z", "category": "m261-526 220-354 220 354H261ZM706-80q-74 0-124-50t-50-124q0-74 50-124t124-50q74 0 124 50t50 124q0 74-50 124T706-80Zm-586-25v-304h304v304H120Zm586.08-35Q754-140 787-173.08q33-33.09 33-81Q820-302 786.92-335q-33.09-33-81-33Q658-368 625-334.92q-33 33.09-33 81Q592-206 625.08-173q33.09 33 81 33ZM180-165h184v-184H180v184Zm189-421h224L481-767 369-586Zm112 0ZM364-349Zm342 95Z", "grain": "M229.91-160q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm-170-165q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm-500-170q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm-170-165q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Zm335 0q-28.91 0-49.41-20.59-20.5-20.59-20.5-49.5t20.59-49.41q20.59-20.5 49.5-20.5t49.41 20.59q20.5 20.59 20.5 49.5t-20.59 49.41q-20.59 20.5-49.5 20.5Z", "palette": "M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-85 32-158t87.5-127q55.5-54 130-84.5T489-880q79 0 150 26.5T763.5-780q53.5 47 85 111.5T880-527q0 108-63 170.5T650-294h-75q-18 0-31 14t-13 31q0 27 14.5 46t14.5 44q0 38-21 58.5T480-80Zm0-400Zm-198 11q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15Zm126-170q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15Zm214 0q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15Zm131 170q15-15 15-35t-15-35q-15-15-35-15t-35 15q-15 15-15 35t15 35q15 15 35 15t35-15ZM480-140q11 0 15.5-4.5T500-159q0-14-14.5-26T471-238q0-46 30-81t76-35h73q76 0 123-44.5T820-527q0-132-100-212.5T489-820q-146 0-247.5 98.5T140-480q0 141 99.5 240.5T480-140Z", "flare": "M40-450v-60h232v60H40Zm271-157-80-80 42-42 80 80-42 42Zm139-81v-232h60v232h-60Zm199 81-42-42 80-80 42 42-80 80Zm39 157v-60h232v60H688Zm-280.5 42.5Q378-437 378-480t29.5-72.5Q437-582 480-582t72.5 29.5Q582-523 582-480t-29.5 72.5Q523-378 480-378t-72.5-29.5ZM692-226l-85-85 42-42 85 85-42 42Zm-424 0-42-42 85-85 42 42-85 85ZM450-40v-232h60v232h-60Z", "upload": "M450-313v-371L330-564l-43-43 193-193 193 193-43 43-120-120v371h-60ZM220-160q-24 0-42-18t-18-42v-143h60v143h520v-143h60v143q0 24-18 42t-42 18H220Z", "image": "M180-120q-24 0-42-18t-18-42v-600q0-24 18-42t42-18h600q24 0 42 18t18 42v600q0 24-18 42t-42 18H180Zm0-60h600v-600H180v600Zm56-97h489L578-473 446-302l-93-127-117 152Zm-56 97v-600 600Z", "record": "M282.5-282.5Q200-365 200-480t82.5-197.5Q365-760 480-760t197.5 82.5Q760-595 760-480t-82.5 197.5Q595-200 480-200t-197.5-82.5Z", "stop": "M240-240v-480h480v480H240Z", "pause": "M555-200v-560h175v560H555Zm-325 0v-560h175v560H230Z", "play": "M320-203v-560l440 280-440 280Z", "down": "M480-344 240-584l43-43 197 197 197-197 43 43-240 240Z", "close": "m249-207-42-42 231-231-231-231 42-42 231 231 231-231 42 42-231 231 231 231-42 42-231-231-231 231Z", "add": "M450-450H200v-60h250v-250h60v250h250v60H510v250h-60v-250Z", "check": "M378-246 154-470l43-43 181 181 384-384 43 43-427 427Z", "movie": "m140-800 74 152h130l-74-152h89l74 152h130l-74-152h89l74 152h130l-74-152h112q24 0 42 18t18 42v520q0 24-18 42t-42 18H140q-24 0-42-18t-18-42v-520q0-24 18-42t42-18Zm0 212v368h680v-368H140Zm0 0v368-368Z", "cube": "M480-880 830-680v400L480-80 130-280v-400l350-200Zm0 65L240-680l240 135 240-135-240-135ZM175-605v300l275 155v-300L175-605Zm610 0L510-450v300l275-155v-300Z", "star": "M480-269 294-157l49-212-164-143 216-19 85-200 85 200 216 19-164 143 49 212-186-112Z", "anim": "M480-80a400 400 0 1 1 0-800 400 400 0 0 1 0 800Zm0-80a320 320 0 1 0 0-640 320 320 0 0 0 0 640Zm0-160a160 160 0 1 1 0-320 160 160 0 0 1 0 320Z", "square": "M160-160v-640h640v640H160Zm80-80h480v-480H240v480Z", "gridi": "M240-160v-160H80v-80h160v-160H80v-80h160v-160h80v160h320v-160h80v160h160v80H720v160h160v80H720v160h-80v-160H320v160h-80Zm80-240h320v-160H320v160Z", "cursor": "M300-120 200-840l560 360-260 60-200 300Z", "photos": "M345-377h391L609-548 506-413l-68-87-93 123Zm-85 177q-24 0-42-18t-18-42v-560q0-24 18-42t42-18h560q24 0 42 18t18 42v560q0 24-18 42t-42 18H260Zm0-60h560v-560H260v560ZM140-80q-24 0-42-18t-18-42v-620h60v620h620v60H140Zm120-740v560-560Z"};
 const icon = (n, attrs = '') => `<md-icon aria-hidden="true"${attrs ? ' ' + attrs : ''}><svg viewBox="0 -960 960 960"><path d="${ICONS[n]}"/></svg></md-icon>`;
 const SHAPES = [
   ['circle', 'Koło', '<circle cx="9" cy="9" r="6" fill="currentColor"/>'],
@@ -1107,11 +1228,42 @@ const SEQ_HINT = {
   flow:'Kropki płyną jak w nurcie z jednego zdjęcia na drugie i układają nowy obraz.',
   fade:'Kropki zostają na miejscu i płynnie zmieniają rozmiar na kolejne zdjęcie.'};
 const hasSeq = () => seq.items.length >= 2;
+const is3DSrc = () => !!(src && src.type === '3d') && !seqActive();
+function m3Item(){ if (!seqActive()) return null; const t = frameTarget(); return t && t.it.type === '3d' ? t.it : null; }
+const is3D = () => is3DSrc() || !!m3Item();
+const m3Obj = () => { const mi = m3Item(); return mi ? mi.m3 : is3DSrc() ? src.m3 : null; };
+const m3Model = () => { const mi = m3Item(); return mi ? mi.model : is3DSrc() ? m3model : null; };
+const m3Params = () => { const mi = m3Item(); return mi ? mi.p3 : S; };
+const m3Pick = o => Object.fromEntries(Object.keys(M3).map(k => [k, o[k]]));
+let m3Sync = null;
+const M3_SHAPES = [['sphere','Kula'],['box','Sześcian'],['torus','Torus'],['knot','Węzeł'],['cylinder','Walec'],['ring','Pierścień'],['text','Tekst']];
 const SECTIONS = [
   {id:'presets', title:'Gotowe ustawienia', open:true, items:[{t:'presets'}]},
-  {id:'seq', title:'Sekwencja zdjęć', open:true, items:[
+  {id:'m3', title:'Bryła 3D', open:true, items:[
+    {t:'note', text:() => is3D() ? (m3Item() ? `Ustawiasz bryłę: ${frameTarget().label}. ` : '') + 'Przeciągnij bryłę na podglądzie, aby ją obrócić. Kółko myszy przybliża kamerę.'
+      : seqActive() ? 'Wybierz bryłę albo wgraj model, aby dodać go na koniec sekwencji.' : 'Wybierz bryłę albo wgraj model (GLB, GLTF, OBJ, STL). Wszystkie efekty działają na obracającej się bryle.'},
+    {t:'m3shapes'},
+    {t:'m3text', when:() => is3D() && S.m3shape === 'text'},
+    {t:'button', text:'Wgraj model 3D…', act:() => $('#file3d').click()},
+    {t:'check', k:'m3anim', l:'Odtwarzaj animację modelu', when:() => is3D() && S.m3shape === 'model' && !!m3Obj() && m3Obj().hasClips()},
+    {t:'label', text:'Obrót', when:is3D},
+    {t:'range', k:'m3spin', l:'Autoobrót', min:-180, max:180, step:1, f:v => v + '°/s', when:is3D},
+    {t:'seg', k:'m3axis', opts:[['y','Oś Y'],['x','Oś X'],['z','Oś Z'],['xy','Ukos']], when:() => is3D() && S.m3spin !== 0},
+    {t:'range', k:'m3zoom', l:'Przybliżenie kamery', min:0.4, max:3, step:0.01, f:v => v.toFixed(2) + '×', when:is3D},
+    {t:'button', text:'Wyprostuj bryłę', act:() => { set('m3rx', M3.m3rx); set('m3ry', M3.m3ry); m3Obj().reset(); }, when:is3D},
+    {t:'label', text:'Światło i materiał', when:is3D},
+    {t:'check', k:'m3orig', l:'Materiały i kolory z modelu', when:() => is3D() && S.m3shape === 'model'},
+    {t:'seg', k:'m3mat', opts:[['matte','Mat'],['gloss','Połysk'],['metal','Metal']], when:() => is3D() && !(S.m3shape === 'model' && S.m3orig)},
+    {t:'range', k:'m3az', l:'Kierunek światła', min:-180, max:180, step:1, f:deg, when:is3D},
+    {t:'range', k:'m3el', l:'Wysokość światła', min:-90, max:90, step:1, f:deg, when:is3D},
+    {t:'range', k:'m3light', l:'Siła światła', min:0, max:6, step:0.05, f:f2, when:is3D},
+    {t:'range', k:'m3amb', l:'Światło otoczenia', min:0, max:1, step:0.01, f:f2, when:is3D},
+    {t:'range', k:'m3depth', l:'Ton z głębi', min:0, max:1, step:0.01, f:v => Math.round(v * 100) + ' %', when:is3D},
+    {t:'note', text:'0 %: ton daje światło. 100 %: ton daje tylko odległość od kamery, więc bliższe części bryły mają mocniejszy ton.', when:is3D}]},
+  {id:'seq', title:'Sekwencja', open:true, items:[
     {t:'seqlist'},
-    {t:'note', text:() => seq.items.length ? 'Przeciągnij miniaturę, aby zmienić kolejność. Kliknij, aby przejść do zdjęcia.' : 'Dodaj co najmniej 2 zdjęcia, aby połączyć je przejściem. Możesz też zaznaczyć kilka plików naraz w „Wgraj”.'},
+    {t:'note', text:() => seq.items.length ? 'Przeciągnij miniaturę, aby zmienić kolejność. Kliknij, aby przejść do elementu.' : 'Dodaj co najmniej 2 elementy, aby połączyć je przejściem: zdjęcia, wideo albo modele 3D. Bryłę dodasz w sekcji „Bryła 3D”.'},
+    {t:'button', text:'Dodaj bieżące źródło do sekwencji', act:() => addCurrentToSeq(), when:() => !!src && !seqActive()},
     {t:'check', k:'seqOn', l:'Odtwarzaj sekwencję', when:hasSeq},
     {t:'chips', k:'seqType', opts:SEQ_TYPES, when:() => hasSeq() && S.seqOn},
     {t:'note', text:() => SEQ_HINT[S.seqType], when:() => hasSeq() && S.seqOn},
@@ -1188,9 +1340,13 @@ const SECTIONS = [
     {t:'seg', k:'mouse', opts:[['off','Wył.'],['repel','Odpychaj'],['attract','Przyciągaj'],['swirl','Wir']]},
     {t:'range', k:'mouseR', l:'Promień', min:2, max:50, step:1, f:pctK, when:() => S.mouse !== 'off'},
     {t:'range', k:'mouseF', l:'Siła', min:0, max:3, step:0.01, f:f2, when:() => S.mouse !== 'off'}]},
-  {id:'out', title:'Wyjście i nagrywanie', open:false, items:[
+  {id:'out', title:'Scena i nagrywanie', dialog:true, items:[
+    {t:'label', text:'Język / Language'},
+    {t:'lang'},
+    {t:'label', text:'Scena'},
     {t:'select', k:'aspect', l:'Proporcje', opts:[['source','jak źródło'],['1:1','1:1'],['4:5','4:5'],['3:4','3:4'],['9:16','9:16 (Reels, Stories)'],['16:9','16:9']]},
     {t:'select', k:'res', l:'Krótszy bok', num:true, opts:[[720,'720 px'],[1080,'1080 px'],[1440,'1440 px'],[2160,'2160 px']]},
+    {t:'label', text:'Nagrywanie'},
     {t:'select', k:'fps', l:'Klatki nagrania', num:true, opts:[[24,'24 kl/s'],[30,'30 kl/s'],[60,'60 kl/s']]},
     {t:'range', k:'recSec', l:'Długość nagrania', min:1, max:60, step:1, f:v => v + ' s', when:() => !seqActive() && !(showOn() && S.outType !== 'none') && !(src && src.type === 'video' && S.recClip)},
     {t:'check', k:'recClip', l:'Nagrywaj cały klip wideo od początku', when:() => !seqActive() && src && src.type === 'video'},
@@ -1201,29 +1357,56 @@ const SECTIONS = [
 const controls = [];
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 
+const SEC_ICON = {presets:'star', m3:'cube', seq:'photos', show:'play', frame:'fit_screen', anim:'anim', region:'square', grid:'gridi', image:'image', cursor:'cursor'};
+const SEC_SHORT = {presets:'Presety', m3:'3D', seq:'Sekwencja', show:'Wejście', frame:'Kadr', anim:'Animacja', region:'Okno', grid:'Siatka', image:'Obraz', cursor:'Kursor'};
+let panelCollapsed = false;
+try { panelCollapsed = localStorage.getItem(STORE + ':panel') === 'mini'; } catch (e) {}
+function setPanelCollapsed(on){
+  panelCollapsed = on; closePop();
+  document.querySelector('.app').classList.toggle('pcol', on);
+  try { localStorage.setItem(STORE + ':panel', on ? 'mini' : 'full'); } catch (e) {}
+  requestAnimationFrame(fitCanvas);
+}
 function buildPanel(){
   const panel = $('#panel');
+  const ph = el('div', 'phead', trHTML(`<span>Ustawienia</span><button class="pcoll" type="button" title="Zwiń panel" aria-label="Zwiń panel"><md-ripple></md-ripple>${icon('down')}</button>`));
+  const rail = el('nav', 'prail'); rail.setAttribute('aria-label', tr('Sekcje panelu'));
+  const ex = el('button', 'pcoll', `<md-ripple></md-ripple>${icon('down')}`); ex.type = 'button'; ex.title = tr('Rozwiń panel'); ex.setAttribute('aria-label', tr('Rozwiń panel'));
+  rail.appendChild(ex); panel.append(ph, rail);
+  ph.querySelector('.pcoll').addEventListener('click', () => setPanelCollapsed(true));
+  ex.addEventListener('click', () => setPanelCollapsed(false));
   for (const sec of SECTIONS) {
     if (sec.pop) { buildPop(sec); continue; }
+    if (sec.dialog) { for (const it of sec.items) { const c = buildControl(it); if (c) { $('#setBody').appendChild(c.el); controls.push(c); } } continue; }
     const g = el('section', 'group'); const open = openSections[sec.id] ?? sec.open;
     if (!open) g.classList.add('closed');
-    const h = el('button', 'ghead', `<md-ripple></md-ripple><md-focus-ring style="--md-focus-ring-shape:8px"></md-focus-ring><span>${sec.title}</span>${icon('down')}`);
+    const h = el('button', 'ghead', `<md-ripple></md-ripple><md-focus-ring style="--md-focus-ring-shape:8px"></md-focus-ring><span>${esc(tr(sec.title))}</span>${icon('down')}`);
     h.type = 'button'; h.setAttribute('aria-expanded', String(open));
     h.addEventListener('click', () => { const c = g.classList.toggle('closed'); h.setAttribute('aria-expanded', String(!c)); openSections[sec.id] = !c; try { localStorage.setItem(STORE + ':sections', JSON.stringify(openSections)); } catch (e) {} });
     const body = el('div', 'gbody');
     for (const it of sec.items) { const c = buildControl(it); if (c) { body.appendChild(c.el); controls.push(c); } }
     g.append(h, body); panel.appendChild(g);
+    // po zwinięciu panelu sekcja otwiera się w dymku obok paska (ta sama treść, przenoszona tam i z powrotem)
+    const b = el('button', 'rail-btn', `<md-ripple></md-ripple><md-focus-ring style="--md-focus-ring-shape:16px"></md-focus-ring><span class="rail-ic">${icon(SEC_ICON[sec.id] || 'category')}</span><span>${esc(tr(SEC_SHORT[sec.id] || sec.title))}</span>`);
+    b.type = 'button'; b.title = tr(sec.title); b.setAttribute('aria-haspopup', 'dialog'); b.setAttribute('aria-expanded', 'false');
+    const p = el('div', 'pop'); p.id = 'pop-' + sec.id; p.hidden = true; p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', tr(sec.title)); p.dataset.side = 'right';
+    p.innerHTML = `<div class="pop-head"><span>${esc(tr(sec.title))}</span><button class="pop-x" type="button" aria-label="${esc(tr('Zamknij'))}">${icon('close')}</button></div>`;
+    p.__open = () => p.appendChild(body); p.__close = () => g.appendChild(body);
+    $('#pops').appendChild(p); rail.appendChild(b);
+    b.addEventListener('click', () => togglePop(sec.id, b, p));
+    p.querySelector('.pop-x').addEventListener('click', () => { closePop(); b.focus(); });
   }
+  if (panelCollapsed) document.querySelector('.app').classList.add('pcol');
   refreshAll();
 }
 
 /* Dymki z ustawieniami otwierane z paska narzędzi */
 let openPop = null;
 function buildPop(sec){
-  const b = el('button', 'rail-btn', `<md-ripple></md-ripple><md-focus-ring style="--md-focus-ring-shape:16px"></md-focus-ring><span class="rail-ic">${icon(sec.pop)}</span><span>${sec.title}</span>`);
-  b.type = 'button'; b.title = sec.title; b.setAttribute('aria-haspopup', 'dialog'); b.setAttribute('aria-expanded', 'false'); b.setAttribute('aria-controls', 'pop-' + sec.id);
-  const p = el('div', 'pop'); p.id = 'pop-' + sec.id; p.hidden = true; p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', sec.title);
-  p.innerHTML = `<div class="pop-head"><span>${sec.title}</span><button class="pop-x" type="button" aria-label="Zamknij ${sec.title}">${icon('close')}</button></div>`;
+  const b = el('button', 'rail-btn', `<md-ripple></md-ripple><md-focus-ring style="--md-focus-ring-shape:16px"></md-focus-ring><span class="rail-ic">${icon(sec.pop)}</span><span>${esc(tr(sec.title))}</span>`);
+  b.type = 'button'; b.title = tr(sec.title); b.setAttribute('aria-haspopup', 'dialog'); b.setAttribute('aria-expanded', 'false'); b.setAttribute('aria-controls', 'pop-' + sec.id);
+  const p = el('div', 'pop'); p.id = 'pop-' + sec.id; p.hidden = true; p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', tr(sec.title));
+  p.innerHTML = `<div class="pop-head"><span>${esc(tr(sec.title))}</span><button class="pop-x" type="button" aria-label="${esc(tr('Zamknij'))}">${icon('close')}</button></div>`;
   const body = el('div', 'gbody');
   for (const it of sec.items) { const c = buildControl(it); if (c) { body.appendChild(c.el); controls.push(c); } }
   p.appendChild(body); $('#pops').appendChild(p); $('#rail').appendChild(b);
@@ -1233,12 +1416,12 @@ function buildPop(sec){
 function togglePop(id, b, p){
   const same = openPop && openPop.id === id;
   closePop(); if (same) return;
-  openPop = {id, b, p}; p.hidden = false; b.classList.add('on'); b.setAttribute('aria-expanded', 'true');
+  openPop = {id, b, p}; if (p.__open) p.__open(); p.hidden = false; b.classList.add('on'); b.setAttribute('aria-expanded', 'true');
   refreshAll(); placePop();
 }
 function closePop(){
   if (!openPop) return;
-  openPop.p.hidden = true; openPop.b.classList.remove('on'); openPop.b.setAttribute('aria-expanded', 'false'); openPop = null;
+  openPop.p.hidden = true; if (openPop.p.__close) openPop.p.__close(); openPop.b.classList.remove('on'); openPop.b.setAttribute('aria-expanded', 'false'); openPop = null;
 }
 function placePop(){
   if (!openPop) return;
@@ -1247,7 +1430,7 @@ function placePop(){
   const r = b.getBoundingClientRect(), maxH = innerHeight - 88;
   p.style.maxHeight = maxH + 'px';
   const top = Math.max(72, Math.min(r.top - 8, innerHeight - Math.min(p.scrollHeight, maxH) - 16));
-  p.style.left = (r.right + 8) + 'px'; p.style.top = top + 'px';
+  p.style.left = (p.dataset.side === 'right' ? r.left - 8 - p.offsetWidth : r.right + 8) + 'px'; p.style.top = top + 'px';
 }
 document.addEventListener('pointerdown', e => { if (openPop && !openPop.p.contains(e.target) && !openPop.b.contains(e.target)) closePop(); }, true);
 addEventListener('keydown', e => { if (e.key === 'Escape' && openPop) { const b = openPop.b; closePop(); b.focus(); } });
@@ -1256,7 +1439,7 @@ addEventListener('resize', placePop);
 const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 function segment(opts, onPick, cls){
   const box = el('div', 'seg' + (cls ? ' ' + cls : '')); box.setAttribute('role', 'group');
-  const btns = opts.map(([v, html, label]) => {
+  const btns = opts.map(([v, html, label]) => { label = label && tr(label);
     const b = el('button', '', `<md-ripple></md-ripple><md-focus-ring inward></md-focus-ring>${html}`); b.type = 'button';
     if (label) { b.title = label; b.setAttribute('aria-label', label); }
     b.addEventListener('click', () => onPick(v)); box.appendChild(b); return [v, b];
@@ -1265,7 +1448,7 @@ function segment(opts, onPick, cls){
 }
 function chipSet(opts, onPick){
   const box = el('md-chip-set');
-  const chips = opts.map(([v, l]) => { const c = el('md-filter-chip'); c.label = l; c.setAttribute('label', l);
+  const chips = opts.map(([v, l]) => { l = tr(l); const c = el('md-filter-chip'); c.label = l; c.setAttribute('label', l);
     c.addEventListener('click', () => onPick(v)); box.appendChild(c); return [v, c]; });
   return {box, mark(cur){ chips.forEach(([v, c]) => { c.selected = cur === v; }); }};
 }
@@ -1281,7 +1464,7 @@ function buildControl(it){
       return {el:cs.box, it, refresh(){ cs.mark(S[it.k]); }};
     }
     case 'seg': {
-      const sg = segment(it.opts.map(([v, l]) => [v, `${it.opts.length <= 3 ? icon('check', 'class="chk"') : ''}<span>${esc(l)}</span>`]), v => set(it.k, v), it.opts.length >= 4 ? 'dense' : '');
+      const sg = segment(it.opts.map(([v, l]) => [v, `${it.opts.length <= 3 ? icon('check', 'class="chk"') : ''}<span>${esc(tr(l))}</span>`]), v => set(it.k, v), it.opts.length >= 4 ? 'dense' : '');
       return {el:sg.box, it, refresh(){ sg.mark(S[it.k]); }};
     }
     case 'shapes': {
@@ -1290,42 +1473,42 @@ function buildControl(it){
     }
     case 'range': {
       const id = 'c-' + it.k, box = el('div', 'range');
-      box.innerHTML = `<div class="row"><label for="${id}">${esc(it.l)}</label><output for="${id}"></output></div><md-slider id="${id}" min="${it.min}" max="${it.max}" step="${it.step}" aria-label="${esc(it.l)}"></md-slider>`;
+      box.innerHTML = `<div class="row"><label for="${id}">${esc(tr(it.l))}</label><output for="${id}"></output></div><md-slider id="${id}" min="${it.min}" max="${it.max}" step="${it.step}" aria-label="${esc(tr(it.l))}"></md-slider>`;
       const sl = box.querySelector('md-slider'), out = box.querySelector('output');
       sl.addEventListener('input', () => set(it.k, Number(sl.value), true));
       sl.addEventListener('dblclick', () => set(it.k, DEFAULTS[it.k]));
-      return {el:box, it, refresh(){ if (sl.value !== S[it.k]) sl.value = S[it.k]; out.textContent = it.f(+S[it.k]); }};
+      return {el:box, it, refresh(){ if (sl.value !== S[it.k]) sl.value = S[it.k]; out.textContent = tr(it.f(+S[it.k])); }};
     }
     case 'select': {
       const id = 'c-' + it.k;
-      const s = el('md-outlined-select'); s.id = id; s.label = it.l; s.setAttribute('label', it.l);
-      s.innerHTML = it.opts.map(([v, l]) => `<md-select-option value="${v}"${String(S[it.k]) === String(v) ? ' selected' : ''}><div slot="headline">${esc(l)}</div></md-select-option>`).join('');
+      const s = el('md-outlined-select'); s.id = id; s.label = tr(it.l); s.setAttribute('label', tr(it.l));
+      s.innerHTML = it.opts.map(([v, l]) => `<md-select-option value="${v}"${String(S[it.k]) === String(v) ? ' selected' : ''}><div slot="headline">${esc(tr(l))}</div></md-select-option>`).join('');
       s.addEventListener('change', () => set(it.k, it.num ? +s.value : s.value));
       return {el:s, it, refresh(){ if (s.value !== String(S[it.k])) s.value = String(S[it.k]); }};
     }
     case 'check': {
       const id = 'c-' + it.k, box = el('label', 'check');
-      box.innerHTML = `<span>${esc(it.l)}</span><md-switch id="${id}" aria-label="${esc(it.l)}"></md-switch>`;
+      box.innerHTML = `<span>${esc(tr(it.l))}</span><md-switch id="${id}" aria-label="${esc(tr(it.l))}"></md-switch>`;
       const c = box.querySelector('md-switch'); c.addEventListener('change', () => set(it.k, c.selected));
       return {el:box, it, refresh(){ c.selected = !!S[it.k]; }};
     }
-    case 'label': return {el:el('p', 'sublabel', it.text), it, refresh(){}};
+    case 'label': return {el:el('p', 'sublabel', esc(tr(it.text))), it, refresh(){}};
     case 'regionEdit': {
       const box = el('label', 'check');
-      box.innerHTML = '<span>Przesuwaj i zmieniaj rozmiar na podglądzie</span><md-switch id="rg-edit" aria-label="Edytuj okno na podglądzie"></md-switch>';
+      box.innerHTML = trHTML('<span>Przesuwaj i zmieniaj rozmiar na podglądzie</span><md-switch id="rg-edit" aria-label="Edytuj okno na podglądzie"></md-switch>');
       const sw = box.querySelector('md-switch'); sw.addEventListener('change', () => setEditRegion(sw.selected));
       return {el:box, it, refresh(){ sw.selected = editRegion; }};
     }
-    case 'button': { const b = el('md-outlined-button', '', esc(it.text)); b.addEventListener('click', () => it.act()); const w = el('div', 'frame-actions'); w.appendChild(b); return {el:w, it, refresh(){}}; }
-    case 'note': { const p = el('p', 'note'); return {el:p, it, refresh(){ p.textContent = typeof it.text === 'function' ? it.text() : it.text; }}; }
+    case 'button': { const b = el('md-outlined-button', '', esc(tr(it.text))); b.addEventListener('click', () => it.act()); const w = el('div', 'frame-actions'); w.appendChild(b); return {el:w, it, refresh(){}}; }
+    case 'note': { const p = el('p', 'note'); return {el:p, it, refresh(){ p.textContent = tr(typeof it.text === 'function' ? it.text() : it.text); }}; }
     case 'frame': {
       const box = el('div', 'gbody frame');
-      box.innerHTML = `<p class="note frame-label" style="margin:0"></p>
+      box.innerHTML = trHTML(`<p class="note frame-label" style="margin:0"></p>
         <div class="range"><div class="row"><label for="fr-x">Przesunięcie w poziomie</label><output for="fr-x"></output></div><md-slider id="fr-x" min="-100" max="100" step="1" aria-label="Przesunięcie w poziomie"></md-slider></div>
         <div class="range"><div class="row"><label for="fr-y">Przesunięcie w pionie</label><output for="fr-y"></output></div><md-slider id="fr-y" min="-100" max="100" step="1" aria-label="Przesunięcie w pionie"></md-slider></div>
         <div class="range"><div class="row"><label for="fr-z">Skala zdjęcia</label><output for="fr-z"></output></div><md-slider id="fr-z" min="25" max="400" step="1" aria-label="Skala zdjęcia"></md-slider></div>
         <label class="check"><span>Przesuwaj na podglądzie (przeciągnij, kółko myszy: skala)</span><md-switch id="fr-edit" aria-label="Przesuwaj zdjęcie na podglądzie"></md-switch></label>
-        <div class="frame-actions"><md-outlined-button id="fr-reset">Wyśrodkuj</md-outlined-button></div>`;
+        <div class="frame-actions"><md-outlined-button id="fr-reset">Wyśrodkuj</md-outlined-button></div>`);
       const [sx, sy, sz] = ['#fr-x', '#fr-y', '#fr-z'].map(q => box.querySelector(q));
       const outs = [...box.querySelectorAll('output')], lab = box.querySelector('.frame-label'), ed = box.querySelector('#fr-edit');
       const upd = (key, v) => { const t = frameTarget(); if (!t) return; t.it.pos[key] = v; frameChanged(t.it); };
@@ -1338,7 +1521,7 @@ function buildControl(it){
       frameCtl = {el:box, it, refresh(){
         const t = frameTarget(); box.hidden = !t; if (!t) return;
         const ps = t.it.pos;
-        lab.textContent = `Ustawiasz: ${t.label}. Pozycja i skala zapisują się osobno dla każdego zdjęcia.`;
+        lab.textContent = tr(`Ustawiasz: ${t.label}. Pozycja i skala zapisują się osobno dla każdego zdjęcia.`);
         if (sx.value !== Math.round(ps.x * 100)) sx.value = Math.round(ps.x * 100);
         if (sy.value !== Math.round(ps.y * 100)) sy.value = Math.round(ps.y * 100);
         if (sz.value !== Math.round(ps.z * 100)) sz.value = Math.round(ps.z * 100);
@@ -1349,6 +1532,24 @@ function buildControl(it){
       }};
       return frameCtl;
     }
+    case 'm3shapes': {
+      const box = el('div'); let cs = null, sig = null;
+      const pick = v => { if (is3D()) set('m3shape', v); else open3D(v); };
+      const rebuild = () => { const mo = is3D() ? m3Model() : null, nm = mo ? mo.name.replace(/\.[^.]+$/, '') : ''; if (nm === sig) return; sig = nm;
+        box.textContent = ''; cs = chipSet((mo ? [['model', nm]] : []).concat(M3_SHAPES), pick); box.appendChild(cs.box); };
+      return {el:box, it, refresh(){ rebuild(); cs.mark(is3D() ? S.m3shape : null); }};
+    }
+    case 'm3text': {
+      const box = el('label', 'tfield', trHTML('<span>Napis</span><input type="text" maxlength="40" spellcheck="false" aria-label="Napis 3D">'));
+      const inp = box.querySelector('input'); let t = 0;
+      inp.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => set('m3text', inp.value || ' ', true), 180); });
+      inp.addEventListener('keydown', e => e.stopPropagation());
+      return {el:box, it, refresh(){ if (document.activeElement !== inp) inp.value = S.m3text; }};
+    }
+    case 'lang': {
+      const sg = segment([['pl', '<span>Polski</span>'], ['en', '<span>English</span>']], setLang);
+      return {el:sg.box, it, refresh(){ sg.mark(lang); }};
+    }
     case 'seqlist': {
       const box = el('div', 'thumbs'); thumbsBox = box; renderThumbs();
       return {el:box, it, refresh(){}};
@@ -1356,7 +1557,7 @@ function buildControl(it){
     case 'colors': {
       const box = el('div', 'colors');
       const items = [['bg','Tło'],['fg','Jednostki'],['fg2','Drugi kolor']].map(([k, l]) => {
-        const s = el('label', 'swatch', `<md-ripple></md-ripple><i></i><div><small>${l}</small><b></b></div><input type="color" id="c-${k}" aria-label="${l}">`);
+        const s = el('label', 'swatch', `<md-ripple></md-ripple><i></i><div><small>${esc(tr(l))}</small><b></b></div><input type="color" id="c-${k}" aria-label="${esc(tr(l))}">`);
         const inp = s.querySelector('input'); inp.addEventListener('input', () => set(k, inp.value, true));
         box.appendChild(s); return {k, s, inp, i:s.querySelector('i'), b:s.querySelector('b')};
       });
@@ -1365,21 +1566,22 @@ function buildControl(it){
     }
   }
 }
-function refreshAll(){ for (const c of controls) { c.refresh(); if (c.it && c.it.when) c.el.hidden = !c.it.when(); } if (typeof updateRegBox === 'function' && !rgDrag) updateRegBox(); }
+function refreshAll(){ const mi = m3Item(); if (mi && mi !== m3Sync) Object.assign(S, mi.p3); m3Sync = mi; for (const c of controls) { c.refresh(); if (c.it && c.it.when) c.el.hidden = !c.it.when(); } if (typeof updateRegBox === 'function' && !rgDrag) updateRegBox(); }
 
 let thumbsBox = null, dragFrom = -1;
 function renderThumbs(){
   if (!thumbsBox) return;
   thumbsBox.textContent = '';
   seq.items.forEach((it, i) => {
-    const t = el('div', 'thumb'); t.draggable = true; t.tabIndex = 0; t.title = it.name;
-    t.setAttribute('role', 'button'); t.setAttribute('aria-label', `Zdjęcie ${i + 1}: ${it.name}`);
-    const im = el('img'); im.src = it.url; im.alt = '';
+    const t = el('div', 'thumb'); t.draggable = true; t.tabIndex = 0; t.title = tr(it.name);
+    t.setAttribute('role', 'button'); t.setAttribute('aria-label', `${tr(it.type === '3d' ? 'Bryła 3D' : it.type === 'video' ? 'Wideo' : 'Zdjęcie')} ${i + 1}: ${tr(it.name)}`);
+    const im = el('img'); im.src = it.thumb || it.url; im.alt = '';
     const n = el('span', 'n', String(i + 1));
-    const x = el('button', 'x', icon('close')); x.type = 'button'; x.title = 'Usuń z sekwencji'; x.setAttribute('aria-label', `Usuń zdjęcie ${i + 1}`);
+    if (it.type === 'video' || it.type === '3d') t.appendChild(el('span', 'kind', icon(it.type === '3d' ? 'cube' : 'movie')));
+    const x = el('button', 'x', icon('close')); x.type = 'button'; x.title = tr('Usuń z sekwencji'); x.setAttribute('aria-label', tr(`Usuń element ${i + 1}`));
     x.addEventListener('click', e => { e.stopPropagation(); removeItem(i); });
     t.append(im, n, x);
-    const jump = () => { seq.sel = i; seqT = i * seqCycle() + 0.001; if (showOn()) showT = (S.inType !== 'none' ? S.inDur : 0) + seqT; morph = null; updateImgBox(); if (frameCtl) frameCtl.refresh(); };
+    const jump = () => { seq.sel = i; seqT = i * seqCycle() + 0.001; if (showOn()) showT = (S.inType !== 'none' ? S.inDur : 0) + seqT; morph = null; updateImgBox(); refreshAll(); };
     t.addEventListener('click', jump);
     t.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); jump(); } if (e.key === 'Delete' || e.key === 'Backspace') removeItem(i); });
     t.addEventListener('dragstart', e => { dragFrom = i; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(i)); });
@@ -1390,26 +1592,30 @@ function renderThumbs(){
     t.addEventListener('dragend', () => { dragFrom = -1; });
     thumbsBox.appendChild(t);
   });
-  const add = el('button', 'thumb add', `<md-ripple></md-ripple>${icon('add')}`); add.type = 'button'; add.title = 'Dodaj zdjęcia do sekwencji'; add.setAttribute('aria-label', 'Dodaj zdjęcia do sekwencji');
+  const add = el('button', 'thumb add', `<md-ripple></md-ripple>${icon('add')}`); add.type = 'button'; add.title = tr('Dodaj zdjęcia, wideo albo modele 3D'); add.setAttribute('aria-label', tr('Dodaj elementy do sekwencji'));
   add.addEventListener('click', () => $('#seqFile').click());
   thumbsBox.appendChild(add);
   markThumbs();
 }
-function markThumbs(){ if (frameCtl) frameCtl.refresh(); if (editFrame) updateImgBox(); if (!thumbsBox) return; [...thumbsBox.children].forEach((t, i) => t.classList.toggle('current', seqActive() && i === seq.cur)); }
+function markThumbs(){ if (m3Item() !== m3Sync) refreshAll(); if (frameCtl) frameCtl.refresh(); if (editFrame) updateImgBox(); if (!thumbsBox) return; [...thumbsBox.children].forEach((t, i) => t.classList.toggle('current', seqActive() && i === seq.cur)); }
 function removeItem(i){
-  const [it] = seq.items.splice(i, 1); if (it && it.url.startsWith('blob:')) URL.revokeObjectURL(it.url); seq.sel = null; markDirty();
+  const [it] = seq.items.splice(i, 1); dropItem(it); seq.sel = null; markDirty();
   morph = null; seq.cur = -1; seqT = Math.min(seqT, Math.max(0, seqSpan() - 0.001));
   layout(); renderThumbs(); updateSourceInfo(); refreshAll();
 }
 function updateSourceInfo(){
   if (seqActive()) {
-    $('#srcName').textContent = `Sekwencja · ${photos(seq.items.length)}`;
-    $('#srcMeta').textContent = `${seq.items[0].w}×${seq.items[0].h} · ${fmtTime(seqSpan())}`;
+    $('#srcName').textContent = tr(`Sekwencja · ${photos(seq.items.length)}`);
+    $('#srcMeta').textContent = fmtTime(seqSpan());
+  } else if (src && src.type === '3d') {
+    $('#srcName').textContent = S.m3shape === 'model' && m3model ? m3model.name : tr('Bryła 3D · ' + ((M3_SHAPES.find(x => x[0] === S.m3shape) || [, ''])[1]));
+    $('#srcMeta').textContent = S.m3shape === 'model' && m3model ? '3D · ' + m3model.ext.toUpperCase() : '3D';
   } else if (src) {
-    $('#srcName').textContent = src.name;
+    $('#srcName').textContent = tr(src.name);
     $('#srcMeta').textContent = `${src.w}×${src.h}` + (src.type === 'video' ? ' · ' + fmtTime(src.el.duration) : '');
   }
-  $('#srcIcon').innerHTML = icon(seqActive() ? 'photos' : src && src.type === 'video' ? 'movie' : 'image');
+  cv.classList.toggle('m3', is3D());
+  $('#srcIcon').innerHTML = icon(seqActive() ? 'photos' : src && src.type === '3d' ? 'cube' : src && src.type === 'video' ? 'movie' : 'image');
   $('#transport').hidden = !(seqActive() || showOn() || (src && src.type === 'video'));
   if (src && src.type === 'video' && !seqActive()) $('#tDur').textContent = fmtTime(src.el.duration);
 }
@@ -1423,6 +1629,7 @@ function set(k, v, live){
   S[k] = v;
   if (k === 'style') Object.assign(S, STYLES[v]);
   if (LOOK_KEYS.has(k)) { S.preset = null; lookVer++; }
+  if (k in M3) { const mi = m3Item(); if (mi) { mi.p3[k] = v; snapLater(mi); } }
   apply(k);
   refreshAll();
   save();
@@ -1430,11 +1637,13 @@ function set(k, v, live){
 function apply(k){
   if (k === 'seqOn') {
     seqT = 0; morph = null; seq.cur = -1;
+    if (!seqActive()) seq.items.forEach(it => { if (it.type === 'video') it.el.pause(); });
     if (src && src.type === 'video') { if (seqActive()) src.el.pause(); else if (playing) src.el.play().catch(() => {}); }
     layout(); updateSourceInfo(); markThumbs(); return;
   }
   if (['region','outside','rx','ry','rw','rh','backlight','glow'].includes(k)) needClear = true;
   if (k === 'region' && !S.region) editRegion = false;
+  if (k === 'm3shape' || k === 'm3text') { morph = null; updateSourceInfo(); if (m3Item()) renderThumbs(); return; }
   if (k === 'seqHold' || k === 'seqTrans' || k === 'seqLoop') { morph = null; updateSourceInfo(); return; }
   if (['inType','inDur','outType','outDur','showHold','outAfter','showGap'].includes(k)) { if (k === 'inType' || k === 'outType') showT = 0; morph = null; updateSourceInfo(); return; }
   if (k === 'style' || REGEN.has(k)) regen();
@@ -1453,21 +1662,116 @@ function setSource(elm, type, w, h, name){
   if (src && src.type === 'video' && src.el !== elm) { src.el.pause(); src.el.removeAttribute('src'); src.el.load(); }
   src = {el:elm, type, w, h, name, pos:{x:0, y:0, z:1}};
   lastVideoTime = -1; sampleDirty = true;
-  if (seqActive() && booted) { S.seqOn = false; toast('Sekwencja wstrzymana. Włączysz ją ponownie w sekcji „Sekwencja zdjęć”.'); markThumbs(); }
+  if (seqActive() && booted) { S.seqOn = false; toast('Sekwencja wstrzymana. Włączysz ją ponownie w sekcji „Sekwencja”.'); markThumbs(); }
   if (type === 'video' && playing && !seqActive()) elm.play().catch(() => {});
   layout(); updateSourceInfo(); refreshAll(); markDirty();
 }
 let booted = false;
+/* ================= Scena 3D ================= */
+let lib3d = null, lib3dP = null, m3view = null, m3model = null;
+const MODEL_RE = /\.(glb|gltf|obj|stl)$/i;
+function load3D(){
+  if (lib3d) return Promise.resolve(lib3d);
+  return lib3dP || (lib3dP = new Promise((res, rej) => {
+    const go = () => { try { lib3d = window.STANCZYK3D_LIB(); res(lib3d); } catch (e) { lib3dP = null; rej(e); } };
+    if (window.STANCZYK3D_LIB) return go();
+    const sc_ = document.createElement('script'); sc_.src = 'three3d.js'; sc_.onload = go; sc_.onerror = () => { lib3dP = null; rej(new Error('three3d')); };
+    document.head.appendChild(sc_);
+  }));
+}
+// shape: bryła do pokazania (albo null = zostaw S.m3shape); model: {buf, ext, name, data}
+async function open3D(shape, model){
+  if (seqActive()) {
+    const mi = m3Item();
+    if (mi && model) {
+      try { await mi.m3.setModel(model.buf, model.ext); } catch (e) { toast('Nie udało się wczytać modelu. Sprawdź plik (GLB, GLTF, OBJ, STL; bez kompresji Draco).'); return false; }
+      mi.model = {name:model.name, ext:model.ext, data:model.data}; mi.name = model.name; mi.p3.m3shape = 'model'; S.m3shape = 'model'; snapLater(mi); morph = null; refreshAll(); markDirty(); return true;
+    }
+    try { const it = await item3D({...m3Pick(S), m3shape:model ? 'model' : shape || 'sphere', m3text:S.m3text}, model);
+      const wasActive = seqActive(); seq.items.push(it); seq.sel = seq.items.length - 1; seqLoaded(wasActive); showFrameTarget(); toast(`Dodano do sekwencji: ${it.name}.`); return true; }
+    catch (e) { toast('Nie udało się dodać bryły do sekwencji. ' + (model ? 'Sprawdź plik modelu.' : '')); return false; }
+  }
+  try { await load3D(); if (!m3view) m3view = lib3d.create(); }
+  catch (e) { toast('Nie udało się uruchomić 3D. Sprawdź, czy plik three3d.js leży obok index.html.'); return false; }
+  if (model) {
+    try { await m3view.setModel(model.buf, model.ext); m3model = {name:model.name, ext:model.ext, data:model.data}; }
+    catch (e) { toast(model.ext === 'gltf' ? 'Nie udało się wczytać modelu. GLTF z osobnymi plikami (.bin, tekstury) zapisz jako jeden plik GLB.' : 'Nie udało się wczytać modelu. Sprawdź plik (GLB, GLTF, OBJ, STL; bez kompresji Draco).'); return false; }
+  }
+  if (shape) S.m3shape = shape;
+  if (S.m3shape === 'model' && !m3view.hasModel()) S.m3shape = 'sphere';
+  if (!(src && src.type === '3d')) {
+    if (seqActive()) { S.seqOn = false; markThumbs(); }
+    const ar = S.aspect === 'source' ? 1 : W / H, w = ar >= 1 ? 960 : Math.round(960 * ar), h = ar >= 1 ? Math.round(960 / ar) : 960;
+    m3view.reset(); m3view.setSize(w, h);
+    setSource(m3view.canvas, '3d', w, h, 'Bryła 3D'); src.m3 = m3view;
+  } else { morph = null; updateSourceInfo(); refreshAll(); markDirty(); }
+  save(); return true;
+}
+// Elementy sekwencji: wideo i bryły 3D (każda bryła ma własną scenę i ustawienia)
+const thumbOf = (elm, w, h) => { const k = 200 / Math.max(w, h), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+  const x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height); try { x.drawImage(elm, 0, 0, c.width, c.height); } catch (e) {} return c.toDataURL('image/jpeg', 0.75); };
+const shapeName = p3 => (M3_SHAPES.find(x => x[0] === p3.m3shape) || [, 'Bryła'])[1] + (p3.m3shape === 'text' ? ` „${p3.m3text}”` : '');
+async function item3D(p3, model){
+  await load3D();
+  const m3 = lib3d.create();
+  if (model) await m3.setModel(model.buf, model.ext);
+  const k = Math.min(1, 960 / Math.max(W, H)), it = {type:'3d', el:m3.canvas, m3, p3:{...M3, ...p3}, model:model ? {name:model.name, ext:model.ext, data:model.data} : null,
+    w:Math.round(W * k), h:Math.round(H * k), ver:-1, ok:true, live:true, pos:{x:0, y:0, z:1}};
+  if (!model && it.p3.m3shape === 'model') it.p3.m3shape = 'sphere';
+  it.name = model ? model.name : 'Bryła 3D · ' + shapeName(it.p3);
+  snap3D(it); return it;
+}
+function snap3D(it){ it.m3.setSize(it.w, it.h); it.m3.update(0, it.p3); it.url = it.thumb = thumbOf(it.m3.canvas, it.w, it.h); it.fr = (it.fr || 0) + 1; }
+let snapT = 0;
+function snapLater(it){ clearTimeout(snapT); snapT = setTimeout(() => { if (!seq.items.includes(it)) return; if (!it.model || it.p3.m3shape !== 'model') it.name = 'Bryła 3D · ' + shapeName(it.p3); snap3D(it); renderThumbs(); }, 350); }
+async function itemVideo(url, name, extra){
+  const v = await loadVid(url); v.pause();
+  return {type:'video', el:v, url, name, w:v.videoWidth, h:v.videoHeight, ver:-1, ok:true, live:true, pos:{x:0, y:0, z:1}, thumb:thumbOf(v, v.videoWidth, v.videoHeight), ...extra};
+}
+const isVidFile = f => f.type.startsWith('video/') || /\.(mp4|mov|webm|m4v)$/i.test(f.name);
+const isImgFile = f => f.type.startsWith('image/') || /\.(png|jpe?g|gif|webp|avif|bmp)$/i.test(f.name);
+async function addCurrentToSeq(){
+  if (!src) return;
+  const wasActive = seqActive();
+  try {
+    if (src.type === '3d') {
+      const mo = m3model && S.m3shape === 'model' ? {...m3model, buf:await dataToBuf(m3model.data)} : null;
+      seq.items.push(await item3D(m3Pick(S), mo));
+    } else if (src.type === 'video') {
+      const url = src.file ? URL.createObjectURL(src.file) : src.path ? fileURL(src.path) : src.el.currentSrc;
+      seq.items.push(await itemVideo(url, src.name, {path:src.path || null, file:src.file || null}));
+    } else {
+      const data = await itemData(src);
+      seq.items.push({el:src.el, url:data, data, name:src.name, w:src.w, h:src.h, ver:-1, ok:true, pos:{...(src.pos || {x:0, y:0, z:1})}});
+    }
+  } catch (e) { toast('Nie udało się dodać bieżącego źródła do sekwencji.'); return; }
+  toast(seq.items.length < 2 ? 'Dodano do sekwencji. Dodaj jeszcze jeden element, aby powstało przejście.' : `Dodano do sekwencji (${photos(seq.items.length)}).`);
+  if (seq.items.length >= 2) seqLoaded(wasActive); else { renderThumbs(); refreshAll(); markDirty(); }
+}
+function dropItem(it){
+  if (!it) return;
+  if (it.url && it.url.startsWith('blob:')) URL.revokeObjectURL(it.url);
+  if (it.type === 'video') { it.el.pause(); it.el.removeAttribute('src'); it.el.load(); }
+  if (it.type === '3d' && it.m3) it.m3.dispose();
+}
+async function loadModelFile(f){
+  const ext = f.name.split('.').pop().toLowerCase();
+  try { const buf = await f.arrayBuffer(), data = await blobToDataURL(f); if (await open3D('model', {buf, ext, name:f.name, data})) toast(`Wczytano model „${f.name}”.`); }
+  catch (e) { toast('Nie udało się odczytać pliku modelu.'); }
+}
+const dataToBuf = d => fetch(d).then(r => r.arrayBuffer());
+$('#file3d').addEventListener('change', e => { if (e.target.files[0]) loadModelFile(e.target.files[0]); e.target.value = ''; });
 function loadFile(f){
   if (!f) return;
+  if (MODEL_RE.test(f.name)) { loadModelFile(f); return; }
   const isVid = f.type.startsWith('video/') || /\.(mp4|mov|webm|m4v)$/i.test(f.name);
   const isImg = f.type.startsWith('image/') || /\.(png|jpe?g|gif|webp|avif|bmp)$/i.test(f.name);
-  if (!isVid && !isImg) { toast('Ten plik nie jest zdjęciem ani wideo. Wybierz np. JPG, PNG, MP4 lub MOV.'); return; }
+  if (!isVid && !isImg) { toast('Ten plik nie jest zdjęciem, wideo ani modelem 3D. Wybierz np. JPG, PNG, MP4, MOV, GLB lub OBJ.'); return; }
   const url = URL.createObjectURL(f);
   const done = () => { if (objectURL) URL.revokeObjectURL(objectURL); objectURL = url; };
   if (isVid) {
     const v = document.createElement('video'); v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto';
-    v.onloadeddata = () => { done(); setSource(v, 'video', v.videoWidth, v.videoHeight, f.name); src.path = DESK ? DESK.pathForFile(f) : null; };
+    v.onloadeddata = () => { done(); setSource(v, 'video', v.videoWidth, v.videoHeight, f.name); src.path = DESK ? DESK.pathForFile(f) : null; src.file = f; };
     v.onerror = () => { URL.revokeObjectURL(url); toast('Nie udało się otworzyć wideo. Spróbuj pliku MP4 (H.264) lub WebM.'); };
     v.src = url;
   } else {
@@ -1483,6 +1787,8 @@ function openFiles(files){
   if (!files.length) return;
   const pf = files.find(f => /\.(stanczyk|kropkarnia)$/i.test(f.name));
   if (pf) { if (DESK) openProject(DESK.pathForFile(pf)); else toast('Projekty .stanczyk otworzysz w aplikacji desktopowej.'); return; }
+  const mf = files.find(f => MODEL_RE.test(f.name));
+  if (mf) { loadModelFile(mf); return; }
   if (files.length > 1) addToSequence(files); else loadFile(files[0]);
 }
 $('#file').addEventListener('change', e => { openFiles(e.target.files); e.target.value = ''; });
@@ -1496,7 +1802,7 @@ addEventListener('drop', e => {
   const files = e.dataTransfer ? e.dataTransfer.files : [];
   if (!files.length) return;
   // upuszczenie na panel sekwencji dokłada zdjęcia do listy
-  if (thumbsBox && e.target instanceof Node && thumbsBox.closest('.group').contains(e.target)) addToSequence([...files]);
+  if (thumbsBox && e.target instanceof Node && thumbsBox.closest('.gbody').contains(e.target)) addToSequence([...files]);
   else openFiles(files);
 });
 
@@ -1504,8 +1810,9 @@ addEventListener('drop', e => {
 const ICON_PAUSE = icon('pause'), ICON_PLAY = icon('play');
 function setPlaying(p){
   playing = p;
-  const b = $('#btnPlay'); b.innerHTML = p ? ICON_PAUSE : ICON_PLAY; b.setAttribute('aria-label', p ? 'Pauza' : 'Odtwórz'); b.title = (p ? 'Pauza' : 'Odtwórz') + ' (spacja)';
+  const b = $('#btnPlay'); b.innerHTML = p ? ICON_PAUSE : ICON_PLAY; b.setAttribute('aria-label', tr(p ? 'Pauza' : 'Odtwórz')); b.title = tr(p ? 'Pauza' : 'Odtwórz') + tr(' (spacja)');
   if (src && src.type === 'video' && !seqActive()) { if (p) src.el.play().catch(() => {}); else src.el.pause(); }
+  if (!p) seq.items.forEach(it => { if (it.type === 'video') it.el.pause(); });
 }
 $('#btnPlay').addEventListener('click', () => setPlaying(!playing));
 addEventListener('keydown', e => {
@@ -1608,6 +1915,24 @@ cv.addEventListener('wheel', e => {
   t.it.pos.z = Math.min(4, Math.max(0.25, t.it.pos.z * Math.exp(-e.deltaY * 0.0015))); frameChanged(t.it);
 }, {passive:false});
 
+/* ================= Obracanie bryły 3D ================= */
+let m3drag = null;
+cv.addEventListener('pointerdown', e => {
+  if (editFrame || editRegion || e.button !== 0 || !is3D()) return;
+  const P = m3Params(); m3drag = {x:e.clientX, y:e.clientY, rx:P.m3rx, ry:P.m3ry, P}; try { cv.setPointerCapture(e.pointerId); } catch (err) {} cv.classList.add('rotating');
+});
+cv.addEventListener('pointermove', e => {
+  if (!m3drag) return;
+  const P = m3drag.P; S.m3ry = P.m3ry = +(m3drag.ry + (e.clientX - m3drag.x) * 0.45).toFixed(2);
+  S.m3rx = P.m3rx = +Math.max(-90, Math.min(90, m3drag.rx + (e.clientY - m3drag.y) * 0.45)).toFixed(2);
+});
+const endRot = () => { if (!m3drag) return; const mi = m3Item(); m3drag = null; cv.classList.remove('rotating'); if (mi) snapLater(mi); save(); };
+cv.addEventListener('pointerup', endRot); cv.addEventListener('pointercancel', endRot);
+cv.addEventListener('wheel', e => {
+  if (editFrame || !is3D() || e.ctrlKey || e.metaKey) return; e.preventDefault();
+  set('m3zoom', +Math.min(3, Math.max(0.4, S.m3zoom * Math.exp(-e.deltaY * 0.0015))).toFixed(3), true);
+}, {passive:false});
+
 /* ================= Kursor ================= */
 const ring = $('#ring');
 function pointer(e){
@@ -1664,10 +1989,10 @@ function updateZoomBar(){
 }
 {
   const zb = $('#zoombar');
-  zb.innerHTML = `<button type="button" class="zout" title="Pomniejsz (⌘−)" aria-label="Pomniejsz podgląd"><md-ripple></md-ripple>${icon('remove')}</button>
+  zb.innerHTML = trHTML(`<button type="button" class="zout" title="Pomniejsz (⌘−)" aria-label="Pomniejsz podgląd"><md-ripple></md-ripple>${icon('remove')}</button>
     <button type="button" class="zl" title="Przełącz: dopasuj / 100 %" aria-label="Powiększenie podglądu"><md-ripple></md-ripple>100 %</button>
     <button type="button" class="zin" title="Powiększ (⌘=)" aria-label="Powiększ podgląd"><md-ripple></md-ripple>${icon('add')}</button>
-    <button type="button" class="zfit" title="Dopasuj do okna (⌘0)" aria-label="Dopasuj podgląd do okna"><md-ripple></md-ripple>${icon('fit_screen')}</button>`;
+    <button type="button" class="zfit" title="Dopasuj do okna (⌘0)" aria-label="Dopasuj podgląd do okna"><md-ripple></md-ripple>${icon('fit_screen')}</button>`);
   zb.querySelector('.zout').addEventListener('click', () => zoomStep(-1));
   zb.querySelector('.zin').addEventListener('click', () => zoomStep(1));
   zb.querySelector('.zfit').addEventListener('click', zoomFit);
@@ -1718,8 +2043,16 @@ async function startRec(){
   const mime = pickMime();
   const isShow = showOn(), isSeq = seqActive();
   const isClip = !isShow && !isSeq && src && src.type === 'video' && S.recClip;
-  if (isShow) { showT = 0; seqT = 0; morph = null; seq.cur = -1; setPlaying(true); }
-  else if (isSeq) { seqT = 0; morph = null; seq.cur = -1; setPlaying(true); }
+  const rewind = () => { if (isShow) { showT = 0; seqT = 0; morph = null; seq.cur = -1; } else if (isSeq) { seqT = 0; morph = null; seq.cur = -1; } needClear = true; };
+  if (isShow || isSeq) {
+    rewind(); setPlaying(true);
+    // dwie klatki, żeby płótno pokazywało już początek pokazu, a nie ostatni obraz z podglądu
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    rewind();
+    showUpdate(0); if (!seqActive() && sampleDirty && !showOn()) drawSample();
+    lastCount = showEmpty ? 0 : step(); if (seqRun && seqRun.type !== 'fade' && seqRun.p > 0 && seqRun.p < 1 && morph) lastCount = stepMorph(seqRun.p, seqRun.type, seqRun.mode);
+    render(lastCount);
+  }
   if (isClip) {
     const v = src.el; v.loop = false; v.pause(); v.currentTime = 0;
     await new Promise(r => { const f = () => { v.removeEventListener('seeked', f); r(); }; v.addEventListener('seeked', f); setTimeout(f, 800); });
@@ -1735,7 +2068,7 @@ async function startRec(){
     const blob = new Blob(recChunks, {type});
     const n = `stanczyk-${stamp()}.${ext}`; saveOut(blob, n);
     stream.getTracks().forEach(t => t.stop());
-    recorder = null; $('#btnRec').classList.remove('recording'); $('#recLabel').textContent = 'Nagraj wideo';
+    recorder = null; $('#btnRec').classList.remove('recording'); $('#recLabel').textContent = tr('Nagraj wideo');
     if (src && src.type === 'video') { src.el.loop = true; src.el.onended = null; if (playing && !seqActive()) src.el.play().catch(() => {}); }
   };
   recorder.start(250); recStart = performance.now();
@@ -1759,10 +2092,10 @@ function stanczykPlayer(root, CFG){
   cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', CFG.alt || 'Animacja');
   root.appendChild(cv);
   const gl = cv.getContext('webgl2', {antialias:false, preserveDrawingBuffer:true, alpha:false, premultipliedAlpha:false});
-  if (!gl) { cv.remove(); if (CFG.images[0]) { const im = new Image(); im.src = CFG.images[0].u; im.alt = CFG.alt || ''; im.style.cssText = 'display:block;width:100%;height:100%;object-fit:cover'; root.appendChild(im); } return; }
+  if (!gl) { cv.remove(); const d0 = CFG.images.find(d => d.u); if (d0) { const im = new Image(); im.src = d0.u; im.alt = CFG.alt || ''; im.style.cssText = 'display:block;width:100%;height:100%;object-fit:cover'; root.appendChild(im); } return; }
   let W = 2, H = 2, cellPx = 12, N = 0, gridVer = 0, lookVer = 0, HX, HY, PX, PY, VX, VY, SA, SB, buf = new Float32Array(8), needClear = true;
   let LUM = new Float32Array(1), RGB = new Uint8ClampedArray(4), sw = 1, sh = 1, sampleDirty = true, sampleVer = 0;
-  let T = 0, playing = true, scrubbing = false, src = null;
+  let T = 0, FRN = 0, DT = 0, playing = true, scrubbing = false, src = null;
   const mouse = {x:0, y:0, active:false};
   const seq = {items:[], cur:-1};
   let seqT = 0, seqRun = null, morph = null, MA = new Float32Array(8), MB = new Float32Array(8);
@@ -1776,6 +2109,7 @@ function stanczykPlayer(root, CFG){
   const DEMO = !!CFG.demo, WM_TEXT = '@fritzglowacki'; let wmTex = null, wmKey = '', wmW = 0, wmH = 0;
   const RAMP = ' .:-=+*#%@', GLYPHS = RAMP.length, SHAPE_ID = {circle:0, square:1, diamond:2, ring:3, cross:4, line:5, ascii:6};
   function markThumbs(){}
+  /*LIB3D*/
   /*ENGINE*/
   const pPts = program(VS_PTS, FS_PTS), pFull = program(VS_FULL, FS_FULL);
   const U = n => gl.getUniformLocation(pPts, n), UF = n => gl.getUniformLocation(pFull, n);
@@ -1801,6 +2135,8 @@ function stanczykPlayer(root, CFG){
   function frame(now){
     raf = 0; const dt = Math.min(0.05, (now - last) / 1000); last = now;
     if (playing) T += dt * S.speed;
+    FRN++; DT = dt;
+    tick3D(dt);
     if (!showUpdate(dt) && sampleDirty) drawSample();
     let n = 0;
     if (!showEmpty) { n = step(); if (seqRun && seqRun.type !== 'fade' && seqRun.p > 0 && seqRun.p < 1 && morph) n = stepMorph(seqRun.p, seqRun.type, seqRun.mode); }
@@ -1812,29 +2148,47 @@ function stanczykPlayer(root, CFG){
     size();
     if (window.ResizeObserver) new ResizeObserver(size).observe(root); else addEventListener('resize', size);
     if (window.IntersectionObserver) new IntersectionObserver(es => { visible = es[0].isIntersecting; if (visible && !raf) { last = performance.now(); raf = requestAnimationFrame(frame); } }).observe(root);
+    if ((src && src.type === '3d') || seq.items.some(it => it.type === '3d')) {
+      // przeciąganie myszą obraca widoczną bryłę (na dotyku zostawiamy przewijanie strony)
+      const tgt = () => { const it = seq.items.length >= 2 ? seq.items[Math.max(0, seq.cur)] : src; return it && it.type === '3d' ? (it.p3 || S) : null; };
+      let d = null;
+      cv.addEventListener('pointerdown', e => { const P = tgt(); if (!P || e.pointerType !== 'mouse' || e.button !== 0) return; d = {x:e.clientX, y:e.clientY, rx:P.m3rx, ry:P.m3ry, P}; cv.style.cursor = 'grabbing'; try { cv.setPointerCapture(e.pointerId); } catch (er) {} });
+      cv.addEventListener('pointermove', e => { if (!d) return; d.P.m3ry = d.ry + (e.clientX - d.x) * 0.45; d.P.m3rx = Math.max(-90, Math.min(90, d.rx + (e.clientY - d.y) * 0.45)); });
+      const up_ = () => { d = null; cv.style.cursor = ''; }; cv.addEventListener('pointerup', up_); cv.addEventListener('pointercancel', up_);
+    }
     if (S.mouse !== 'off') {
       const pt = e => { const r = cv.getBoundingClientRect(); mouse.x = (e.clientX - r.left) / r.width * W; mouse.y = (e.clientY - r.top) / r.height * H; mouse.active = true; };
       cv.addEventListener('pointermove', pt); cv.addEventListener('pointerdown', pt); cv.addEventListener('pointerleave', () => { mouse.active = false; });
     }
   }
-  Promise.all(CFG.images.map(d => new Promise(res => { const im = new Image(); im.onload = () => res({el:im, w:im.naturalWidth, h:im.naturalHeight, ver:-1, pos:d.p}); im.onerror = () => res(null); im.src = d.u; })))
+  const L3 = LIB3D ? LIB3D() : null;
+  const make3D = d => new Promise(res => { const m3 = L3.create(), it = {el:m3.canvas, type:'3d', live:true, w:d.w, h:d.h, pos:d.p, m3, p3:d.p3, fr:0, ver:-1};
+    m3.setSize(d.w, d.h); const ok = () => res(it);
+    if (d.model) fetch(d.model.data).then(r => r.arrayBuffer()).then(b => m3.setModel(b, d.model.ext)).then(ok, ok); else ok(); });
+  Promise.all(CFG.images.map(d => d.k === '3d' ? (L3 ? make3D(d) : null) : new Promise(res => { const im = new Image(); im.onload = () => res({el:im, w:im.naturalWidth, h:im.naturalHeight, ver:-1, pos:d.p}); im.onerror = () => res(null); im.src = d.u; })))
     .then(list => { list = list.filter(Boolean); if (!list.length) return; if (list.length >= 2) seq.items = list; else src = list[0]; start(); });
 }
-const ENGINE = {fade, lerp, grad, noise, mulberry, hex, lum3, shader, program, buildAtlas, sampleFrom, drawSample, ensureSample, invalidate, regen, step, seqActive, seqCycle, seqSpan, seqUpdate, showOn, showBody, showSpan, srcItem, showUpdate, toneCtx, toneOf, evalInto, buildPairs, stepMorph, initExtras, upData, upPhoto, drawWatermark, drawTex, render};
-function exportItems(){ return seqActive() ? seq.items : (src && src.type === 'image' ? [src] : []); }
+const ENGINE = {fade, lerp, grad, noise, mulberry, hex, lum3, shader, program, buildAtlas, sampleFrom, tick3D, tickLive, drawSample, ensureSample, invalidate, regen, step, seqActive, seqCycle, seqSpan, seqUpdate, showOn, showBody, showSpan, srcItem, showUpdate, toneCtx, toneOf, evalInto, buildPairs, twk, stepMorph, initExtras, upData, upPhoto, drawWatermark, drawTex, render};
+function exportItems(){ return seqActive() ? seq.items.filter(it => it.type !== 'video') : (src && (src.type === 'image' || src.type === '3d') ? [src] : []); }
+const exportOk = () => exportItems().length > 0;
+const skippedVideos = () => seqActive() ? seq.items.filter(it => it.type === 'video').length : 0;
 function buildExport(o){
   const items = exportItems();
-  const images = items.map(it => { const k = Math.min(1, o.imgMax / Math.max(it.w, it.h)); const c = document.createElement('canvas');
+  const images = items.map(it => { if (it.type === '3d') { const single = it === src, P = single ? S : it.p3, mo = single ? m3model : it.model;
+      return {k:'3d', w:it.w, h:it.h, p:it.pos || {x:0, y:0, z:1}, p3:single ? null : {...it.p3}, model:P.m3shape === 'model' && mo ? {ext:mo.ext, data:mo.data} : null}; }
+    const k = Math.min(1, o.imgMax / Math.max(it.w, it.h)); const c = document.createElement('canvas');
     c.width = Math.max(1, Math.round(it.w * k)); c.height = Math.max(1, Math.round(it.h * k)); c.getContext('2d').drawImage(it.el, 0, 0, c.width, c.height);
     return {u:c.toDataURL('image/jpeg', 0.86), p:it.pos || {x:0, y:0, z:1}}; });
+  const m3 = images.some(d => d.k === '3d');
   const s = {...S, res:o.res, seqOn:images.length >= 2};
   s.mouse = o.mouse ? (S.mouse === 'off' ? 'repel' : S.mouse) : 'off';
-  const cfg = {S:s, W, H, images, demo:DEMO, sh:[VS_PTS, FS_PTS, VS_FULL, FS_FULL, FS_TEX], alt: images.length >= 2 ? `Animacja: sekwencja ${images.length} zdjęć` : 'Animacja z kropek'};
+  const cfg = {S:s, W, H, images, demo:DEMO, sh:[VS_PTS, FS_PTS, VS_FULL, FS_FULL, FS_TEX], alt: tr(images.length >= 2 ? `Animacja: sekwencja, ${photos(images.length)}` : 'Animacja z kropek')};
   const engine = Object.entries(ENGINE).map(([n, f]) => `var ${n} = ${f.toString()};`).join('\n  ');
-  const player = stanczykPlayer.toString().replace('/*ENGINE*/', engine);
+  const lib = m3 ? `var LIB3D = ${window.STANCZYK3D_LIB.toString()};` : 'var LIB3D = null;';
+  const player = stanczykPlayer.toString().replace('/*LIB3D*/', () => lib).replace('/*ENGINE*/', () => engine).replace(/<\/script/gi, '<\\/script');
   const json = JSON.stringify(cfg).replace(/<\//g, '<\\/');
-  const what = images.length >= 2 ? `sekwencja ${images.length} zdjęć, przejście ${((SEQ_TYPES.find(t => t[0] === S.seqType) || [, S.seqType])[1]).toLowerCase()}` : 'jedno zdjęcie';
-  return `<!-- Stańczyk: animacja (${what}). Wklej w miejscu strony, gdzie ma się pojawić; szerokość dopasuje się do kontenera. -->
+  const what = images.length >= 2 ? `sekwencja: ${photos(images.length)}, przejście ${((SEQ_TYPES.find(t => t[0] === S.seqType) || [, S.seqType])[1]).toLowerCase()}` : m3 ? 'bryła 3D' : 'jedno zdjęcie';
+  return `<!-- ${tr(`Stańczyk: animacja (${what}). Wklej w miejscu strony, gdzie ma się pojawić; szerokość dopasuje się do kontenera.`)} -->
 <div class="stanczyk" style="position:relative;width:100%;aspect-ratio:${W} / ${H};background:${S.bg};overflow:hidden"></div>
 <script>
 (${player})(document.currentScript.previousElementSibling, ${json});
@@ -1842,18 +2196,21 @@ function buildExport(o){
 }
 let exOpts = {mouse:true, imgMax:1000, res:1080}, exT = 0;
 function refreshExport(){
-  const items = exportItems(), ok = items.length > 0;
-  $('#exInfo').textContent = ok
-    ? (seqActive() ? `Eksportuję sekwencję ${items.length} zdjęć z przejściem „${(SEQ_TYPES.find(t => t[0] === S.seqType) || [, ''])[1]}” i bieżącymi ustawieniami. Animacja dopasuje się do szerokości miejsca na stronie i zatrzyma, gdy nie będzie jej widać.`
+  const items = exportItems(), ok = exportOk();
+  $('#exInfo').textContent = tr(ok
+    ? is3DSrc() ? 'Eksportuję bryłę 3D z obecnymi ustawieniami (z biblioteką three.js' + (S.m3shape === 'model' && m3model ? ' i modelem' : '') + '). Na stronie bryła obraca się sama, a myszą można ją przeciągać.'
+    : (seqActive() ? `Eksportuję sekwencję (${photos(items.length)}) z przejściem „${(SEQ_TYPES.find(t => t[0] === S.seqType) || [, ''])[1]}” i bieżącymi ustawieniami. Animacja dopasuje się do szerokości miejsca na stronie i zatrzyma, gdy nie będzie jej widać.`
        : 'Eksportuję bieżące zdjęcie z obecnymi ustawieniami. Animacja dopasuje się do szerokości miejsca na stronie i zatrzyma, gdy nie będzie jej widać.')
-    : 'Eksport działa ze zdjęciem albo z sekwencją zdjęć. Bieżące źródło to wideo: wgraj zdjęcie albo dodaj zdjęcia do sekwencji.';
+    : seqActive() ? 'W sekwencji jest za mało elementów do eksportu: wideo nie trafia do kodu na stronę. Dodaj zdjęcia albo bryły 3D.'
+    : 'Eksport działa ze zdjęciem, bryłą 3D albo sekwencją. Bieżące źródło to wideo: nagraj je przyciskiem „Nagraj wideo” albo dodaj zdjęcia do sekwencji.');
+  if (ok && skippedVideos()) $('#exInfo').textContent += ' ' + tr(`Wideo z sekwencji (${skippedVideos()}) nie trafia do kodu: pomijam je.`);
   $('#exOpts').hidden = $('#exCode').hidden = $('#exSize').hidden = !ok;
-  if (ok && DEMO) $('#exInfo').textContent += ' Wersja demo dodaje w prawym dolnym rogu znak @fritzglowacki.';
+  if (ok && DEMO) $('#exInfo').textContent += ' ' + tr('Wersja demo dodaje w prawym dolnym rogu znak @fritzglowacki.');
   $('#exCopy').disabled = $('#exFile').disabled = !ok;
   if (!ok) return;
   const code = buildExport(exOpts);
   $('#exCode').value = code;
-  $('#exSize').textContent = `Rozmiar kodu: ${nf.format(Math.round(code.length / 1024))} KB (w tym zdjęcia). Wklej go w blok „Embed” / „HTML” na swojej stronie.`;
+  $('#exSize').textContent = tr(`Rozmiar kodu: ${nf.format(Math.round(code.length / 1024))} KB (${exportItems().some(it => it.type === '3d') ? 'w tym biblioteka 3D' : 'w tym zdjęcia'}). Wklej go w blok „Embed” / „HTML” na swojej stronie.`);
 }
 function openExport(){
   $('#exMouse').selected = exOpts.mouse; $('#exImg').value = String(exOpts.imgMax); $('#exRes').value = String(exOpts.res);
@@ -1874,8 +2231,28 @@ $('#exCopy').addEventListener('click', () => {
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(() => toast('Skopiowano kod. Wklej go na swojej stronie.'), fallback); else fallback();
 });
 $('#exFile').addEventListener('click', () => {
-  const html = `<!doctype html>\n<html lang="pl">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>Stańczyk — animacja</title>\n<style>html,body{margin:0;background:${S.bg}}main{max-width:1080px;margin:0 auto}</style>\n</head>\n<body>\n<main>\n${$('#exCode').value}\n</main>\n</body>\n</html>\n`;
+  const html = `<!doctype html>\n<html lang="${lang}">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>${tr('Stańczyk — animacja')}</title>\n<style>html,body{margin:0;background:${S.bg}}main{max-width:1080px;margin:0 auto}</style>\n</head>\n<body>\n<main>\n${$('#exCode').value}\n</main>\n</body>\n</html>\n`;
   const n = `stanczyk-animacja-${stamp()}.html`; saveOut(new Blob([html], {type:'text/html'}), n);
+});
+
+/* ================= Ustawienia projektu: scena i nagrywanie ================= */
+function openSettings(mode){
+  const isNew = mode === 'new';
+  $('#setTitle').textContent = tr(isNew ? 'Nowy projekt' : 'Ustawienia projektu');
+  $('#setInfo').textContent = tr(isNew ? 'Ustaw scenę i nagrywanie. Zmienisz je później w „Ustawieniach projektu” (przycisk z suwakami na górnym pasku albo ⌘,).' : 'Scena i nagrywanie bieżącego projektu. Zmiany widać od razu na podglądzie.');
+  $('#setDone').textContent = tr(isNew ? 'Utwórz projekt' : 'Gotowe');
+  $('#setBack').hidden = !(isNew && DESK);
+  closePop(); refreshAll(); $('#setScrim').hidden = false;
+  setTimeout(() => $('#setDone').focus(), 50);
+}
+function closeSettings(){ $('#setScrim').hidden = true; }
+$('#btnSettings').addEventListener('click', () => openSettings('edit'));
+$('#setDone').addEventListener('click', closeSettings);
+$('#setBack').addEventListener('click', () => { closeSettings(); showStart(); });
+$('#setScrim').addEventListener('click', e => { if (e.target === e.currentTarget) closeSettings(); });
+addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !$('#setScrim').hidden) { closeSettings(); return; }
+  if ((e.metaKey || e.ctrlKey) && e.key === ',' && !DESK) { e.preventDefault(); openSettings('edit'); }
 });
 
 /* ================= Domyślny obraz: Jan Matejko, „Stańczyk” (1862) ================= */
@@ -1892,9 +2269,9 @@ const DESK = window.stanczykDesktop || null;
 let proj = {path:null, name:'Bez tytułu', dirty:false}, loadingProject = false;
 function markDirty(){ if (!DESK || !booted || loadingProject || proj.dirty) return; proj.dirty = true; updateTitle(); }
 function updateTitle(){
-  document.title = `${proj.name} — Stańczyk`;
+  document.title = `${tr(proj.name)} — Stańczyk`;
   const pn = $('#projName');
-  if (pn) { pn.hidden = !DESK; pn.textContent = proj.name; pn.classList.toggle('dirty', proj.dirty); pn.title = proj.path || 'Projekt jeszcze nie jest zapisany'; }
+  if (pn) { pn.hidden = !DESK; pn.textContent = tr(proj.name); pn.classList.toggle('dirty', proj.dirty); pn.title = proj.path || tr('Projekt jeszcze nie jest zapisany'); }
   if (DESK) DESK.setTitle({title:document.title, dirty:proj.dirty, path:proj.path});
 }
 async function saveOut(blob, name){
@@ -1918,22 +2295,26 @@ function projectThumb(){
 }
 async function serializeProject(name){
   let source = {type:'sample', pos:src ? src.pos : null};
-  if (src && !src.sample) source = src.type === 'video'
+  if (src && src.type === '3d') source = {type:'3d', pos:src.pos, model:m3model ? {...m3model} : null};
+  else if (src && !src.sample) source = src.type === 'video'
     ? {type:'video', name:src.name, path:src.path || null, pos:src.pos}
     : {type:'image', name:src.name, data:await itemData(src), pos:src.pos};
-  const sequence = await Promise.all(seq.items.map(async it => ({name:it.name, data:await itemData(it), pos:it.pos})));
+  const sequence = await Promise.all(seq.items.map(async it => it.type === 'video' ? {type:'video', name:it.name, path:it.path || null, pos:it.pos}
+    : it.type === '3d' ? {type:'3d', name:it.name, p3:{...it.p3}, model:it.model || null, pos:it.pos}
+    : {name:it.name, data:await itemData(it), pos:it.pos}));
   return {app:'stanczyk', version:1, name, saved:new Date().toISOString(), settings:{...S}, source, sequence, thumb:projectThumb()};
 }
 function resetState(){
   setEditFrame(false); setEditRegion(false); if (recorder) stopRec();
-  seq.items.forEach(it => { if (it.url && it.url.startsWith('blob:')) URL.revokeObjectURL(it.url); });
+  seq.items.forEach(dropItem);
   seq.items = []; seq.sel = null; seq.cur = -1; showT = 0; seqT = 0; morph = null; needClear = true;
+  if (m3view) m3view.clearModel(); m3model = null;
 }
 function finishLoad(){ layout(); renderThumbs(); updateSourceInfo(); refreshAll(); save(); }
 const sampleSource = loadDefault;
 async function confirmLeave(){
   if (!proj.dirty) return true;
-  const a = await DESK.confirmUnsaved(proj.name);
+  const a = await DESK.confirmUnsaved(tr(proj.name));
   if (a === 'cancel') return false;
   return a === 'save' ? saveProject(false) : true;
 }
@@ -1943,6 +2324,7 @@ async function newProject(){
   try { resetState(); for (const k of Object.keys(S)) delete S[k]; Object.assign(S, DEFAULTS, PRESETS.find(p => p[0] === DEFAULT_PRESET)[2], {preset:DEFAULT_PRESET}); lookVer++; await sampleSource(); finishLoad(); }
   finally { loadingProject = false; }
   proj = {path:null, name:'Bez tytułu', dirty:false}; updateTitle(); hideStart();
+  openSettings('new');
 }
 async function loadProject(text, path, name){
   let obj; try { obj = JSON.parse(text); } catch (e) { throw new Error('Plik jest uszkodzony albo nie jest projektem Stańczyka.'); }
@@ -1953,13 +2335,26 @@ async function loadProject(text, path, name){
     resetState();
     for (const k of Object.keys(S)) delete S[k]; Object.assign(S, DEFAULTS, obj.settings || {}); lookVer++;
     const so = obj.source || {type:'sample'};
-    if (so.type === 'image' && so.data) { const im = await loadImg(so.data); setSource(im, 'image', im.naturalWidth, im.naturalHeight, so.name || 'zdjęcie'); src.data = so.data; }
+    if (so.type === '3d') {
+      let model = null;
+      if (so.model && so.model.data) { try { model = {...so.model, buf:await dataToBuf(so.model.data)}; } catch (e) { warns.push(`Nie udało się wczytać modelu „${so.model.name}”.`); } }
+      if (!(await open3D(null, model))) await sampleSource();
+    } else if (so.type === 'image' && so.data) { const im = await loadImg(so.data); setSource(im, 'image', im.naturalWidth, im.naturalHeight, so.name || 'zdjęcie'); src.data = so.data; }
     else if (so.type === 'video' && so.path) {
       try { const v = await loadVid(fileURL(so.path)); setSource(v, 'video', v.videoWidth, v.videoHeight, so.name || 'wideo'); src.path = so.path; }
       catch (e) { warns.push(`Nie znaleziono wideo „${so.name}” (${so.path}). Wgraj je ponownie.`); await sampleSource(); }
     } else { if (so.type === 'video') warns.push(`Wideo „${so.name}” nie ma zapisanej ścieżki. Wgraj je ponownie.`); await sampleSource(); }
     if (so.pos) src.pos = {...so.pos};
     const items = await Promise.all((obj.sequence || []).map(async d => {
+      if (d.type === 'video') {
+        if (!d.path) { warns.push(`Wideo „${d.name}” w sekwencji nie ma zapisanej ścieżki. Dodaj je ponownie.`); return null; }
+        try { const it = await itemVideo(fileURL(d.path), d.name, {path:d.path}); if (d.pos) it.pos = {...d.pos}; return it; }
+        catch (e) { warns.push(`Nie znaleziono wideo „${d.name}” (${d.path}).`); return null; }
+      }
+      if (d.type === '3d') {
+        try { const mo = d.model && d.model.data ? {...d.model, buf:await dataToBuf(d.model.data)} : null; const it = await item3D(d.p3 || {}, mo); if (d.pos) it.pos = {...d.pos}; return it; }
+        catch (e) { warns.push(`Nie udało się wczytać bryły „${d.name}”.`); return null; }
+      }
       try { const im = await loadImg(d.data); return {el:im, url:d.data, data:d.data, name:d.name, w:im.naturalWidth, h:im.naturalHeight, ver:-1, ok:true, pos:d.pos ? {...d.pos} : {x:0, y:0, z:1}}; }
       catch (e) { warns.push(`Nie udało się wczytać zdjęcia „${d.name}”.`); return null; }
     }));
@@ -1972,7 +2367,7 @@ async function loadProject(text, path, name){
 }
 async function saveProject(as){
   let path = proj.path, name = proj.name;
-  if (as || !path) { const r = await DESK.chooseSavePath(name); if (!r) return false; path = r.path; name = r.name; }
+  if (as || !path) { const r = await DESK.chooseSavePath(tr(name)); if (!r) return false; path = r.path; name = r.name; }
   try { const data = await serializeProject(name); await DESK.writeProject({path, name, json:JSON.stringify(data), thumb:data.thumb}); }
   catch (e) { toast('Nie udało się zapisać projektu. ' + cleanErr(e)); return false; }
   if (src && src.type === 'video' && !src.path) toast(`Zapisano „${name}”, ale bez wideo: wgraj je z dysku, żeby projekt zapamiętał plik.`);
@@ -1986,16 +2381,16 @@ async function openProject(p){
   try { const r = p ? await DESK.readProject(p) : await DESK.openProjectDialog(); if (r) await loadProject(r.text, r.path, r.name); }
   catch (e) { toast(cleanErr(e) || 'Nie udało się otworzyć projektu.'); }
 }
-const fmtDate = ms => new Date(ms).toLocaleString('pl-PL', {day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'});
+const fmtDate = ms => new Date(ms).toLocaleString(lang === 'en' ? 'en-GB' : 'pl-PL', {day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'});
 async function renderRecent(){
   const box = $('#recentList'), list = await DESK.recent();
   box.textContent = '';
-  if (!list.length) { box.innerHTML = '<p class="dsub">Tu pojawią się zapisane projekty. Zacznij od nowego projektu albo otwórz plik .stanczyk.</p>'; return; }
+  if (!list.length) { box.innerHTML = trHTML('<p class="dsub">Tu pojawią się zapisane projekty. Zacznij od nowego projektu albo otwórz plik .stanczyk.</p>'); return; }
   for (const r of list) {
-    const card = el('div', 'rcard' + (r.missing ? ' missing' : '')); card.tabIndex = 0; card.setAttribute('role', 'button'); card.setAttribute('aria-label', 'Otwórz projekt ' + r.name);
-    card.innerHTML = `<md-ripple></md-ripple><div class="rthumb">${r.thumb ? `<img src="${r.thumb}" alt="">` : ''}</div>
+    const card = el('div', 'rcard' + (r.missing ? ' missing' : '')); card.tabIndex = 0; card.setAttribute('role', 'button'); card.setAttribute('aria-label', tr('Otwórz projekt ') + r.name);
+    card.innerHTML = trHTML(`<md-ripple></md-ripple><div class="rthumb">${r.thumb ? `<img src="${r.thumb}" alt="">` : ''}</div>
       <div class="rmeta"><b>${esc(r.name)}</b><small>${r.missing ? 'Nie znaleziono pliku' : fmtDate(r.saved)}</small><small title="${esc(r.path)}">${esc(r.path.replace(/^\/Users\/[^/]+/, '~'))}</small></div>
-      <button class="rx" type="button" title="Usuń z listy" aria-label="Usuń ${esc(r.name)} z listy">${icon('close')}</button>`;
+      <button class="rx" type="button" title="Usuń z listy" aria-label="Usuń ${esc(r.name)} z listy">${icon('close')}</button>`);
     const open = () => r.missing ? toast('Ten plik został przeniesiony albo usunięty.') : openProject(r.path);
     card.addEventListener('click', open); card.addEventListener('keydown', e => { if (e.key === 'Enter') open(); });
     card.querySelector('.rx').addEventListener('click', async e => { e.stopPropagation(); await DESK.removeRecent(r.path); renderRecent(); });
@@ -2006,6 +2401,7 @@ async function showStart(){ $('#start').hidden = false; await renderRecent(); }
 function hideStart(){ $('#start').hidden = true; }
 function initDesktop(){
   document.documentElement.classList.add('desktop');
+  if (DESK.setLang) DESK.setLang(lang);
   updateTitle();
   DESK.onMenu((a, arg) => {
     if (a === 'new') newProject();
@@ -2014,6 +2410,7 @@ function initDesktop(){
     else if (a === 'save') saveProject(false);
     else if (a === 'saveAs') saveProject(true);
     else if (a === 'showStart') showStart();
+    else if (a === 'settings') { hideStart(); openSettings('edit'); }
     else if (a === 'zoomIn') zoomStep(1);
     else if (a === 'zoomOut') zoomStep(-1);
     else if (a === 'zoomFit') zoomFit();
