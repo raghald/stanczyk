@@ -7,7 +7,7 @@ const fs = require('fs/promises');
 const EXT = 'stanczyk';
 const EXTS = [EXT, 'kropkarnia']; // .kropkarnia — projekty sprzed zmiany nazwy
 const FILTER = () => [{ name: T('Projekt Stańczyka'), extensions: EXTS }];
-// Język menu i okien systemowych: ustawiany przez okno aplikacji (app:lang); domyślnie polski
+// Język menu i okien systemowych: ustawiany przez okno aplikacji (app:lang); na start według języka systemu
 const EN = {"Projekt Stańczyka": "Stańczyk project", "O Stańczyku": "About Stańczyk", "Ukryj Stańczyka": "Hide Stańczyk", "Ukryj pozostałe": "Hide Others", "Pokaż wszystko": "Show All", "Zakończ Stańczyka": "Quit Stańczyk", "Plik": "File", "Nowy projekt": "New Project", "Otwórz projekt…": "Open Project…", "Otwórz ostatnie": "Open Recent", "Wyczyść listę": "Clear List", "Brak ostatnich projektów": "No Recent Projects", "Ekran projektów": "Projects Screen", "Ustawienia projektu…": "Project Settings…", "Zapisz": "Save", "Zapisz jako…": "Save As…", "Zamknij okno": "Close Window", "Edycja": "Edit", "Cofnij": "Undo", "Ponów": "Redo", "Wytnij": "Cut", "Kopiuj": "Copy", "Wklej": "Paste", "Zaznacz wszystko": "Select All", "Widok": "View", "Odśwież": "Reload", "Narzędzia deweloperskie": "Developer Tools", "Powiększ podgląd": "Zoom In Preview", "Pomniejsz podgląd": "Zoom Out Preview", "Dopasuj podgląd do okna": "Fit Preview to Window", "Podgląd 100 %": "Preview 100%", "Pełny ekran": "Full Screen", "Okno": "Window", "Zapisz projekt": "Save Project", "Otwórz projekt": "Open Project", "Otwórz": "Open", "Zapisz plik": "Save File", "Nie zapisuj": "Don't Save", "Anuluj": "Cancel", "Bez tytułu": "Untitled", "Jeśli nie zapiszesz, wprowadzone zmiany przepadną.": "If you don't save, your changes will be lost."};
 let LANG = 'pl';
 const T = t => LANG === 'en' ? (EN[t] || t) : t;
@@ -57,7 +57,7 @@ function buildMenu(recent = []) {
       { type: 'separator' },
       { role: 'close', label: T('Zamknij okno') }] },
     { label: T('Edycja'), submenu: [
-      { role: 'undo', label: T('Cofnij') }, { role: 'redo', label: T('Ponów') }, { type: 'separator' },
+      { label: T('Cofnij'), accelerator: 'CmdOrCtrl+Z', click: () => send('undo') }, { label: T('Ponów'), accelerator: 'Shift+CmdOrCtrl+Z', click: () => send('redo') }, { type: 'separator' },
       { role: 'cut', label: T('Wytnij') }, { role: 'copy', label: T('Kopiuj') }, { role: 'paste', label: T('Wklej') }, { role: 'selectAll', label: T('Zaznacz wszystko') }] },
     { label: T('Widok'), submenu: [
       { role: 'reload', label: T('Odśwież') }, { role: 'toggleDevTools', label: T('Narzędzia deweloperskie') }, { type: 'separator' },
@@ -153,6 +153,7 @@ app.on('second-instance', (e, argv) => { const p = projectArg(argv); if (p) open
 if (process.platform !== 'darwin') { const p = projectArg(process.argv); if (p) pendingOpen = p; }
 app.whenReady().then(async () => {
   app.setName('Stańczyk');
+  LANG = /^pl/i.test(app.getLocale()) ? 'pl' : 'en'; // do czasu, aż okno poda swój wybór
   buildMenu(await readRecent());
   createWindow();
   app.on('activate', () => { if (!win) createWindow(); });

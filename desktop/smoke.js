@@ -53,6 +53,19 @@ module.exports = function smoke(win, app) {
       send('openPath', file); await wait(1500);
       results.afterOpen = await js(`[document.querySelector('#srcName').textContent, document.querySelector('#projName').textContent, document.querySelectorAll('.thumb:not(.add)').length, [...document.querySelectorAll('md-filter-chip')].filter(c => c.selected).map(c => c.label).includes('LED')]`);
       results.recent = (await js(`window.stanczykDesktop.recent()`)).map(r => r.name);
+      // brakujące wideo: źródło i element sekwencji zostają na miejscu, okno pokazuje oba, zapis zachowuje ścieżki i kadr
+      const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+      const missFile = path.join(os.tmpdir(), `stanczyk-smoke-brak-${process.pid}.stanczyk`);
+      fs.writeFileSync(missFile, JSON.stringify({app:'stanczyk', version:1, name:'brak', settings:{seqOn:true}, source:{type:'video', name:'zrodlo.mp4', path:'/nie/ma/zrodlo.mp4', pos:{x:0, y:0, z:1}, w:1280, h:720},
+        sequence:[{name:'a.png', data:PNG, pos:{x:0, y:0, z:1}}, {type:'video', name:'klip.mp4', path:'/nie/ma/klip.mp4', pos:{x:0.1, y:-0.2, z:1.5}, w:1920, h:1080}]}));
+      send('openPath', missFile); await wait(1800);
+      results.missing = await js(`[!document.querySelector('#missScrim').hidden, document.querySelectorAll('#missList .missrow').length, document.querySelectorAll('.thumb.missing').length]`);
+      await js(`document.querySelector('#missClose').click()`);
+      send('saveAs'); await wait(1500);
+      const ms = JSON.parse(fs.readFileSync(file, 'utf8'));
+      results.missingSaved = [ms.source.type, ms.source.path, ms.sequence[1].type, ms.sequence[1].path, JSON.stringify(ms.sequence[1].pos)];
+      try { fs.unlinkSync(missFile); } catch {}
+      try { const rf = path.join(app.getPath('userData'), 'recent.json'); fs.writeFileSync(rf, JSON.stringify(JSON.parse(fs.readFileSync(rf, 'utf8')).filter(r => r.path !== missFile))); } catch {}
       await js(`document.querySelector('#c-seqOn').click()`); // sekwencja wył. → bryła staje się źródłem
       await wait(300);
       await js(`[...document.querySelectorAll('md-filter-chip')].find(c => c.label === 'Torus').click()`);

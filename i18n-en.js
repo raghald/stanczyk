@@ -130,7 +130,7 @@ window.STANCZYK_EN = {
 
   // eksport kodu
   'Reakcja na kursor (kropki uciekają przed kursorem)': 'Cursor reaction (dots move away from the cursor)', 'Reakcja na kursor': 'Cursor reaction',
-  'Jakość zdjęć w kodzie': 'Image quality in code', 'Lekka · 600 px': 'Light · 600 px', 'Standard · 1000 px': 'Standard · 1000 px', 'Wysoka · 1600 px': 'High · 1600 px',
+  'Jakość zdjęć w kodzie': 'Image quality in code', 'Lekka (600 px)': 'Light (600 px)', 'Standard (1000 px)': 'Standard (1000 px)', 'Wysoka (1600 px)': 'High (1600 px)',
   'Maks. rozdzielczość animacji': 'Max. animation resolution', 'Kod do wklejenia na stronę': 'Code to paste into your page',
   'Pobierz plik HTML': 'Download HTML file', 'Kopiuj kod': 'Copy code',
   'Eksportuję bieżące zdjęcie z obecnymi ustawieniami. Animacja dopasuje się do szerokości miejsca na stronie i zatrzyma, gdy nie będzie jej widać.': 'Exporting the current image with the current settings. The animation fits the width of its spot on the page and pauses when it is out of view.',
@@ -150,6 +150,11 @@ window.STANCZYK_EN = {
   'Kod jest zaznaczony. Skopiuj go skrótem ⌘C / Ctrl+C.': 'The code is selected. Copy it with ⌘C / Ctrl+C.',
   'Skopiowano kod. Wklej go na swojej stronie.': 'Code copied. Paste it into your page.',
 
+  // brakujące pliki, rozdzielczość
+  'Brakujące pliki': 'Missing files',
+  'Tych plików nie ma już w zapisanym miejscu. Wskaż je ponownie — miejsce w sekwencji, kadr i ustawienia zostaną zachowane.': 'These files are no longer where they were saved. Locate them again — their place in the sequence, framing and settings are kept.',
+  'Rozdzielczość PNG i wideo': 'PNG and video resolution',
+  'Projekt jeszcze nie jest zapisany ': 'The project has not been saved yet',
   // pliki, komunikaty
   'Zapisano {0}': 'Saved {0}',
   'Wczytano model „{0}”.': 'Loaded model “{0}”.',
