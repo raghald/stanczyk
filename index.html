@@ -113,6 +113,10 @@ md-icon svg{width:100%;height:100%;fill:currentColor;display:block}
 #cv.m3.rotating{cursor:grabbing}
 .tfield{display:flex;flex-direction:column;gap:4px;font:500 12px/16px var(--font-ui);letter-spacing:.5px;color:var(--md-sys-color-on-surface-variant)}
 .tfield input{height:48px;padding:0 14px;border-radius:4px;border:1px solid var(--md-sys-color-outline);background:transparent;color:var(--md-sys-color-on-surface);font:400 16px/24px var(--font-ui);outline:none}
+.tfield.error input,.tfield.error input:focus{border:2px solid var(--md-sys-color-error);padding:0 13px}
+.tfield .tc-hint{font:400 12px/16px var(--font-ui);letter-spacing:.4px;color:var(--md-sys-color-error)}
+.tfield .tc-hint:empty{display:none}
+.tfield input[inputmode=numeric]{font-variant-numeric:tabular-nums}
 .tfield input:focus{border:2px solid var(--md-sys-color-primary);padding:0 13px}
 #cv.editing{cursor:grab}
 #cv.editing.dragging{cursor:grabbing}
@@ -395,7 +399,6 @@ md-filter-chip[selected]:active{--md-filter-chip-selected-container-color:var(--
 <div class="scrim" id="setScrim" hidden>
   <div class="dialog setdlg" role="dialog" aria-modal="true" aria-labelledby="setTitle">
     <h2 id="setTitle">Ustawienia projektu</h2>
-    <p class="dsub" id="setInfo"></p>
     <div class="dopts" id="setBody"></div>
     <div class="dactions">
       <md-text-button id="setBack" hidden>Wróć do ekranu projektów</md-text-button>
@@ -1416,9 +1419,8 @@ const SECTIONS = [
     {t:'note', text:() => L(`Rozmiar kadru (PNG i wideo): ${W} × ${H} px`, `Frame size (PNG and video): ${W} × ${H} px`)},
     {t:'label', text:'Nagrywanie'},
     {t:'select', k:'fps', l:'Klatki nagrania', num:true, opts:[[24,'24 kl/s'],[30,'30 kl/s'],[60,'60 kl/s']]},
-    {t:'range', k:'recSec', l:'Długość nagrania', min:1, max:60, step:1, f:v => v + ' s', when:() => !seqActive() && !(showOn() && S.outType !== 'none') && !(src && src.type === 'video' && S.recClip)},
+    {t:'timecode', k:'recSec', l:'Długość nagrania', min:1, max:3600, when:() => !seqActive() && !(showOn() && S.outType !== 'none') && !(src && src.type === 'video' && S.recClip)},
     {t:'check', k:'recClip', l:'Nagrywaj cały klip wideo od początku', when:() => !seqActive() && src && src.type === 'video'},
-    {t:'note', text:'Wersja demo dodaje w prawym dolnym rogu podglądu, PNG, wideo i eksportu kodu znak @fritzglowacki. Aplikacja na Maca i Windowsa (wydania na GitHubie) zapisuje bez znaku.', when:() => DEMO},
     {t:'note', text:() => showOn() ? `Nagranie obejmie cały pokaz z wejściem${S.outType !== 'none' ? ' i wyjściem' : ''}: ${showRecLen().toFixed(1)} s.` : `Sekwencja nagra się w całości od pierwszego zdjęcia: ${seqSpan().toFixed(1)} s.`, when:() => seqActive() || showOn()}]},
 ];
 
@@ -1606,6 +1608,23 @@ function buildControl(it){
       const rebuild = () => { const mo = is3D() ? m3Model() : null, nm = mo ? mo.name.replace(/\.[^.]+$/, '') : ''; if (nm === sig) return; sig = nm;
         box.textContent = ''; cs = chipSet((mo ? [['model', nm]] : []).concat(M3_SHAPES), pick); box.appendChild(cs.box); };
       return {el:box, it, refresh(){ rebuild(); cs.mark(is3D() ? S.m3shape : null); }};
+    }
+    case 'timecode': {
+      const box = el('label', 'tfield', `<span>${esc(tr(it.l))}</span><input type="text" inputmode="numeric" spellcheck="false" autocomplete="off" aria-describedby="tc-hint-${it.k}"><small class="tc-hint" id="tc-hint-${it.k}"></small>`);
+      const inp = box.querySelector('input'), hint = box.querySelector('small');
+      const fmt = sec => { const f = S.fps || 30, tot = Math.round(sec * f), ff = tot % f, ss = Math.floor(tot / f), p = n => String(n).padStart(2, '0'); return `${p(Math.floor(ss / 3600))}:${p(Math.floor(ss / 60) % 60)}:${p(ss % 60)}:${p(ff)}`; };
+      // przyjmuje gg:mm:ss:kk, gg:mm:ss, mm:ss albo same sekundy (także 8.5)
+      const parse = t => { const parts = t.trim().replace(/;/g, ':').replace(/,/g, '.').split(':').map(x => x.trim()); if (!parts.length || parts.length > 4 || parts.some(x => !/^\d+(\.\d+)?$/.test(x))) return NaN;
+        const n = parts.map(Number), f = S.fps || 30; if (n.length === 4) return n[0] * 3600 + n[1] * 60 + n[2] + n[3] / f; if (n.length === 3) return n[0] * 3600 + n[1] * 60 + n[2]; if (n.length === 2) return n[0] * 60 + n[1]; return n[0]; };
+      const err = on => { box.classList.toggle('error', on); inp.setAttribute('aria-invalid', String(on)); hint.textContent = on ? L(`Wpisz czas od ${fmt(it.min)} do ${fmt(it.max)} (gg:mm:ss:kk).`, `Enter a time from ${fmt(it.min)} to ${fmt(it.max)} (hh:mm:ss:ff).`) : ''; };
+      const commit = () => { const v = parse(inp.value); if (!isFinite(v) || v < it.min || v > it.max) { err(true); return false; } err(false); set(it.k, Math.round(v * (S.fps || 30)) / (S.fps || 30)); inp.value = fmt(S[it.k]); return true; };
+      inp.setAttribute('aria-label', `${tr(it.l)} (${L('godziny:minuty:sekundy:klatki', 'hours:minutes:seconds:frames')})`);
+      inp.addEventListener('keydown', e => { e.stopPropagation();
+        if (e.key === 'Enter') { e.preventDefault(); commit(); }
+        else if (e.key === 'Escape') { inp.value = fmt(S[it.k]); err(false); }
+        else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); const st = e.shiftKey ? 10 : 1; set(it.k, Math.min(it.max, Math.max(it.min, Math.round(S[it.k]) + (e.key === 'ArrowUp' ? st : -st)))); inp.value = fmt(S[it.k]); err(false); } });
+      inp.addEventListener('blur', () => { if (!commit()) { inp.value = fmt(S[it.k]); err(false); } });
+      return {el:box, it, refresh(){ if (document.activeElement !== inp) inp.value = fmt(S[it.k]); }};
     }
     case 'm3text': {
       const box = el('label', 'tfield', trHTML('<span>Napis</span><input type="text" maxlength="40" spellcheck="false" aria-label="Napis 3D">'));
@@ -2385,7 +2404,6 @@ $('#exFile').addEventListener('click', () => {
 function openSettings(mode){
   const isNew = mode === 'new';
   $('#setTitle').textContent = tr(isNew ? 'Nowy projekt' : 'Ustawienia projektu');
-  $('#setInfo').textContent = tr(isNew ? 'Ustaw scenę i nagrywanie. Zmienisz je później w „Ustawieniach projektu” (przycisk z suwakami na górnym pasku albo ⌘,).' : 'Scena i nagrywanie bieżącego projektu. Zmiany widać od razu na podglądzie.');
   $('#setDone').textContent = tr(isNew ? 'Utwórz projekt' : 'Gotowe');
   $('#setBack').hidden = !(isNew && DESK);
   closePop(); refreshAll(); $('#setScrim').hidden = false; dialogOpen($('#setScrim'));

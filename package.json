@@ -1,7 +1,7 @@
 {
   "name": "stanczyk",
   "productName": "Stańczyk",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Stańczyk — edytor animacji z kropek: halftone, piksele, ASCII, LED",
   "main": "desktop/main.js",
   "private": true,
