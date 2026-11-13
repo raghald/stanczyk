@@ -113,6 +113,8 @@ md-icon svg{width:100%;height:100%;fill:currentColor;display:block}
 #cv.m3.rotating{cursor:grabbing}
 .tfield{display:flex;flex-direction:column;gap:4px;font:500 12px/16px var(--font-ui);letter-spacing:.5px;color:var(--md-sys-color-on-surface-variant)}
 .tfield input{height:48px;padding:0 14px;border-radius:4px;border:1px solid var(--md-sys-color-outline);background:transparent;color:var(--md-sys-color-on-surface);font:400 16px/24px var(--font-ui);outline:none}
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper .st-lab{flex:1;text-align:center;font:500 12px/16px var(--font-ui);letter-spacing:.5px;color:var(--md-sys-color-on-surface-variant)}
 .tfield.error input,.tfield.error input:focus{border:2px solid var(--md-sys-color-error);padding:0 13px}
 .tfield .tc-hint{font:400 12px/16px var(--font-ui);letter-spacing:.4px;color:var(--md-sys-color-error)}
 .tfield .tc-hint:empty{display:none}
@@ -270,6 +272,7 @@ md-filter-chip[selected]:active{--md-filter-chip-selected-container-color:var(--
 .setdlg{width:min(520px,100%)}
 .setdlg .sublabel{margin:8px 0 -4px}
 .setdlg md-outlined-select{width:100%}
+#exDriveRow md-outlined-select{width:100%}
 #exCode{width:100%;height:180px;resize:vertical;padding:12px;border-radius:8px;border:1px solid var(--md-sys-color-outline-variant);background:var(--md-sys-color-surface-container-lowest);color:var(--md-sys-color-on-surface-variant);font:400 11px/16px var(--font-mono);white-space:pre;overflow:auto}
 .dactions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px}
 @media (max-width:560px){ .drow{grid-template-columns:1fr} }
@@ -384,6 +387,13 @@ md-filter-chip[selected]:active{--md-filter-chip-selected-container-color:var(--
           <md-select-option value="720"><div slot="headline">720 px</div></md-select-option>
           <md-select-option value="1080" selected><div slot="headline">1080 px</div></md-select-option>
           <md-select-option value="1440"><div slot="headline">1440 px</div></md-select-option>
+        </md-outlined-select>
+      </div>
+      <div id="exDriveRow">
+        <md-outlined-select id="exDrive" label="Zmiana elementów sekwencji">
+          <md-select-option value="auto"><div slot="headline">Po czasie</div></md-select-option>
+          <md-select-option value="sections"><div slot="headline">Przy zmianie sekcji strony</div></md-select-option>
+          <md-select-option value="api"><div slot="headline">Z kodu strony (API)</div></md-select-option>
         </md-outlined-select>
       </div>
     </div>
@@ -505,7 +515,7 @@ const LOOK = {
   mouse:'repel', mouseR:14, mouseF:1,
 };
 const OUT = { aspect:'source', res:1080, fps:30, recSec:8, recClip:true,
-  seqOn:false, seqType:'scatter', seqHold:2.5, seqTrans:2.2, seqForce:1, seqLoop:true,
+  seqOn:false, seqMode:'auto', seqType:'scatter', seqHold:2.5, seqTrans:2.2, seqForce:1, seqLoop:true,
   region:false, outside:'photo', rx:0.05, ry:0.08, rw:0.56, rh:0.62,
   inType:'none', inDur:1.8, outType:'none', outDur:1.8, showHold:3, outAfter:'repeat', showGap:0.6 };
 // Scena 3D: bryła, obrót, światło, materiał, ton z głębi
@@ -832,13 +842,35 @@ const mouse = {x:0, y:0, active:false};
 /* ================= Sekwencja zdjęć ================= */
 const seq = {items:[], cur:-1};
 let seqT = 0, seqRun = null, morph = null, MA = new Float32Array(8), MB = new Float32Array(8);
+// tryb „po wyzwalaczu”: element zmienia się na sygnał (sekcja strony, kod, miniatura), nie po czasie
+const drv = {cur:0, want:null, from:0, to:0, p:0, active:false};
 const photos = n => { if (lang === 'en') return n + (n === 1 ? ' element' : ' elements'); const m10 = n % 10, m100 = n % 100; return n + ' ' + (n === 1 ? 'element' : (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) ? 'elementy' : 'elementów'); };
 const seqActive = () => S.seqOn && seq.items.length >= 2;
 const seqCycle = () => S.seqHold + S.seqTrans;
 const seqSpan = () => S.seqLoop ? seq.items.length * seqCycle() : (seq.items.length - 1) * seqCycle() + S.seqHold;
 
+// Przejście z bieżącego elementu prosto do wybranego (także 1 → 4); kolejne wyzwalacze w trakcie lotu czekają i przyspieszają
+function seqDrive(dt){
+  const n = seq.items.length, D = drv;
+  if (D.cur >= n) D.cur = n - 1; if (D.want != null && D.want >= n) D.want = n - 1;
+  if (!D.active && D.want != null && D.want !== D.cur) { D.from = D.cur; D.to = D.want; D.p = 0; D.active = true; }
+  if (D.active) {
+    if (!playing) D.p = 1; else if (!scrubbing) D.p += dt / Math.max(0.05, S.seqTrans) * (D.want != null && D.want !== D.to ? 2.5 : 1);
+    if (D.p >= 1) { D.cur = D.to; D.active = false; D.p = 0; if (D.want === D.cur) D.want = null; if (typeof onSeqStep === 'function') onSeqStep(D.cur); }
+  }
+  const A = seq.items[D.active ? D.from : D.cur]; ensureSample(A);
+  let B = null;
+  if (D.active) { B = seq.items[D.to]; ensureSample(B); if (S.seqType !== 'fade') { const key = ['drv', D.from, D.to, sampleVer, gridVer, lookVer].join(':'); if (!morph || morph.key !== key) buildPairs(key, A, B); } }
+  for (const it of seq.items) if (it.type === 'video' && it !== A && it !== B && !it.el.paused) it.el.pause();
+  LUM = A.L; RGB = A.D;
+  seqRun = B ? {p:D.p, type:S.seqType, LB:B.L, DB:B.D, idx:D.from, to:D.to, Ai:A, Bi:B} : null;
+  const shown = D.active ? D.from : D.cur; if (shown !== seq.cur) { seq.cur = shown; markThumbs(); }
+  return true;
+}
+function seqGoTo(i){ const n = seq.items.length; if (!n) return; drv.want = Math.max(0, Math.min(n - 1, i | 0)); }
 function seqUpdate(dt, once){
   if (!seqActive()) { seqRun = null; return false; }
+  if (S.seqMode === 'trigger') return seqDrive(dt);
   const loop = S.seqLoop && !once;
   const n = seq.items.length, cyc = seqCycle(), span = loop ? n * cyc : (n - 1) * cyc + S.seqHold;
   if (playing && !scrubbing) seqT += dt;
@@ -874,7 +906,7 @@ function srcItem(){ if (sampleDirty) drawSample(); src.L = LUM; src.D = RGB; ret
 function showUpdate(dt){
   showEmpty = false;
   if (!showOn()) return seqUpdate(dt);
-  const hasIn = S.inType !== 'none', hasOut = S.outType !== 'none', isSeq = seqActive();
+  const isSeq = seqActive(), hasIn = S.inType !== 'none', hasOut = S.outType !== 'none' && !(isSeq && S.seqMode === 'trigger');
   const inD = hasIn ? S.inDur : 0, outD = hasOut ? S.outDur : 0, body = showBody(), span = showSpan();
   if (playing && !scrubbing) showT += dt;
   if (hasOut && S.outAfter === 'repeat') { showT %= span; if (showT < 0) showT += span; }
@@ -886,7 +918,7 @@ function showUpdate(dt){
     p = Math.max(1e-4, showT / inD); mode = 'in'; type = S.inType;
     if (isSeq && seq.cur !== 0) { seq.cur = 0; markThumbs(); }
   } else if (!hasOut || showT < inD + body) {
-    if (isSeq) { seqT = showT - inD; return seqUpdate(0, hasOut); }
+    if (isSeq) { if (S.seqMode === 'trigger') return seqUpdate(dt, hasOut); seqT = showT - inD; return seqUpdate(0, hasOut); }
     seqRun = null; return false;
   } else if (showT < inD + body + outD) {
     A = isSeq ? seq.items[seq.items.length - 1] : srcItem(); if (isSeq) ensureSample(A);
@@ -1273,7 +1305,7 @@ const fmtTime = s => { s = Math.max(0, s || 0); const m = Math.floor(s / 60), r 
 const nf = new Intl.NumberFormat(lang === 'en' ? 'en-GB' : 'pl-PL');
 function updateHud(){
   const rec = recorder ? ` · ${tr('nagrywanie')} ${fmtTime((performance.now() - recStart) / 1000)}` : '';
-  const sq = seqActive() ? ` · ${tr('element')} ${seq.cur + 1}/${seq.items.length}${seqRun && seqRun.p > 0 ? ' → ' + ((seqRun.idx + 1) % seq.items.length + 1) : ''}` : '';
+  const sq = seqActive() ? ` · ${tr('element')} ${seq.cur + 1}/${seq.items.length}${seqRun && seqRun.p > 0 ? ' → ' + ((seqRun.to != null ? seqRun.to : (seqRun.idx + 1) % seq.items.length) + 1) : ''}` : '';
   const ph = showEmpty ? ' · ' + tr('pusty kadr') : seqRun && seqRun.mode === 'in' ? ' · ' + tr('wejście') : seqRun && seqRun.mode === 'out' ? ' · ' + tr('wyjście') : '';
   $('#hud').textContent = `${W}×${H} · ${nf.format(lastCount)} ${tr('jednostek')} · ${Math.round(fps)} ${tr('kl/s')}${sq}${ph}${rec}`;
   if (recorder) $('#recLabel').textContent = tr('Zatrzymaj') + ' · ' + fmtTime((performance.now() - recStart) / 1000);
@@ -1340,10 +1372,13 @@ const SECTIONS = [
     {t:'button', text:'Dodaj bieżące źródło do sekwencji', act:() => addCurrentToSeq(), when:() => !!src && !seqActive()},
     {t:'check', k:'seqOn', l:'Odtwarzaj sekwencję', when:hasSeq},
     {t:'chips', k:'seqType', opts:SEQ_TYPES, when:() => hasSeq() && S.seqOn},
-    {t:'range', k:'seqHold', l:'Czas pokazu zdjęcia', min:0.2, max:10, step:0.1, f:v => v.toFixed(1) + ' s', when:() => hasSeq() && S.seqOn},
+    {t:'seg', k:'seqMode', opts:[['auto','Po czasie'],['trigger','Po wyzwalaczu']], when:() => hasSeq() && S.seqOn},
+    {t:'note', text:'Na stronie element zmienia przewijanie do sekcji albo Twój kod (wybierzesz w „Kod na stronę”). Tutaj przełączasz go strzałkami ← → albo miniaturami.', when:() => hasSeq() && S.seqOn && S.seqMode === 'trigger'},
+    {t:'stepper', when:() => hasSeq() && S.seqOn && S.seqMode === 'trigger'},
+    {t:'range', k:'seqHold', l:'Czas pokazu zdjęcia', min:0.2, max:10, step:0.1, f:v => v.toFixed(1) + ' s', when:() => hasSeq() && S.seqOn && S.seqMode !== 'trigger'},
     {t:'range', k:'seqTrans', l:'Czas przejścia', min:0.3, max:8, step:0.1, f:v => v.toFixed(1) + ' s', when:() => hasSeq() && S.seqOn},
     {t:'range', k:'seqForce', l:'Siła przejścia', min:0, max:3, step:0.01, f:f2, when:() => hasSeq() && S.seqOn && S.seqType !== 'fade'},
-    {t:'check', k:'seqLoop', l:'Zapętl (z ostatniego wraca do pierwszego)', when:() => hasSeq() && S.seqOn}]},
+    {t:'check', k:'seqLoop', l:'Zapętl (z ostatniego wraca do pierwszego)', when:() => hasSeq() && S.seqOn && S.seqMode !== 'trigger'}]},
   {id:'show', title:'Wejście i wyjście', open:true, items:[
     {t:'label', text:'Wejście'},
     {t:'chips', k:'inType', opts:[['none','Brak'], ...SEQ_TYPES]},
@@ -1419,7 +1454,7 @@ const SECTIONS = [
     {t:'note', text:() => L(`Rozmiar kadru (PNG i wideo): ${W} × ${H} px`, `Frame size (PNG and video): ${W} × ${H} px`)},
     {t:'label', text:'Nagrywanie'},
     {t:'select', k:'fps', l:'Klatki nagrania', num:true, opts:[[24,'24 kl/s'],[30,'30 kl/s'],[60,'60 kl/s']]},
-    {t:'timecode', k:'recSec', l:'Długość nagrania', min:1, max:3600, when:() => !seqActive() && !(showOn() && S.outType !== 'none') && !(src && src.type === 'video' && S.recClip)},
+    {t:'timecode', k:'recSec', l:'Długość nagrania', min:1, max:3600, when:() => !(seqActive() && S.seqMode !== 'trigger') && !(showOn() && S.outType !== 'none') && !(src && src.type === 'video' && S.recClip)},
     {t:'check', k:'recClip', l:'Nagrywaj cały klip wideo od początku', when:() => !seqActive() && src && src.type === 'video'},
     {t:'note', text:() => showOn() ? `Nagranie obejmie cały pokaz z wejściem${S.outType !== 'none' ? ' i wyjściem' : ''}: ${showRecLen().toFixed(1)} s.` : `Sekwencja nagra się w całości od pierwszego zdjęcia: ${seqSpan().toFixed(1)} s.`, when:() => seqActive() || showOn()}]},
 ];
@@ -1626,6 +1661,13 @@ function buildControl(it){
       inp.addEventListener('blur', () => { if (!commit()) { inp.value = fmt(S[it.k]); err(false); } });
       return {el:box, it, refresh(){ if (document.activeElement !== inp) inp.value = fmt(S[it.k]); }};
     }
+    case 'stepper': {
+      const box = el('div', 'stepper');
+      box.innerHTML = `<md-outlined-button class="st-prev">${esc(L('Poprzedni', 'Previous'))}</md-outlined-button><span class="st-lab" aria-live="polite"></span><md-outlined-button class="st-next">${esc(L('Następny', 'Next'))}</md-outlined-button>`;
+      box.querySelector('.st-prev').addEventListener('click', () => seqStep(-1));
+      box.querySelector('.st-next').addEventListener('click', () => seqStep(1));
+      return {el:box, it, refresh(){ const n = seq.items.length, c = (drv.want != null ? drv.want : drv.cur) + 1; box.querySelector('.st-lab').textContent = L(`Element ${c} z ${n}`, `Item ${c} of ${n}`); }};
+    }
     case 'm3text': {
       const box = el('label', 'tfield', trHTML('<span>Napis</span><input type="text" maxlength="40" spellcheck="false" aria-label="Napis 3D">'));
       const inp = box.querySelector('input'); let t = 0;
@@ -1670,7 +1712,7 @@ function renderThumbs(){
     const x = el('button', 'x', icon('close')); x.type = 'button'; x.title = tr('Usuń z sekwencji'); x.setAttribute('aria-label', tr(`Usuń element ${i + 1}`));
     x.addEventListener('click', e => { e.stopPropagation(); removeItem(i); });
     t.append(im, n, x);
-    const jump = () => { seq.sel = i; seqT = i * seqCycle() + 0.001; if (showOn()) showT = (S.inType !== 'none' ? S.inDur : 0) + seqT; morph = null; updateImgBox(); refreshAll(); };
+    const jump = () => { if (S.seqMode === 'trigger' && seqActive()) { seq.sel = i; seqGoTo(i); updateImgBox(); refreshAll(); return; } seq.sel = i; seqT = i * seqCycle() + 0.001; if (showOn()) showT = (S.inType !== 'none' ? S.inDur : 0) + seqT; morph = null; updateImgBox(); refreshAll(); };
     t.addEventListener('click', () => { jump(); if (it.missing) openMissing(); });
     t.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); jump(); } if (e.key === 'Delete' || e.key === 'Backspace') removeItem(i); });
     t.addEventListener('dragstart', e => { dragFrom = i; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(i)); });
@@ -1708,7 +1750,7 @@ function updateSourceInfo(){
   cv.classList.toggle('m3', is3D());
   $('#filePill').classList.toggle('missing', !!(src && src.missing && !seqActive()));
   $('#srcIcon').innerHTML = icon(seqActive() ? 'photos' : src && src.type === '3d' ? 'cube' : src && src.type === 'video' ? 'movie' : 'image');
-  $('#transport').hidden = !(seqActive() || showOn() || (src && src.type === 'video'));
+  $('#transport').hidden = !((seqActive() && S.seqMode !== 'trigger') || (showOn() && !(seqActive() && S.seqMode === 'trigger')) || (src && src.type === 'video' && !seqActive()));
   if (src && src.type === 'video' && !seqActive()) $('#tDur').textContent = fmtTime(src.el.duration);
 }
 
@@ -1736,6 +1778,7 @@ function apply(k){
   if (['region','outside','rx','ry','rw','rh','backlight','glow'].includes(k)) needClear = true;
   if (k === 'region' && !S.region) editRegion = false;
   if (k === 'm3shape' || k === 'm3text') { morph = null; updateSourceInfo(); if (m3Item()) renderThumbs(); return; }
+  if (k === 'seqMode') { drv.cur = Math.max(0, seq.cur); drv.want = null; drv.active = false; seqT = drv.cur * seqCycle() + 0.001; morph = null; updateSourceInfo(); return; }
   if (k === 'seqHold' || k === 'seqTrans' || k === 'seqLoop') { morph = null; updateSourceInfo(); return; }
   if (['inType','inDur','outType','outDur','showHold','outAfter','showGap'].includes(k)) { if (k === 'inType' || k === 'outType') showT = 0; morph = null; updateSourceInfo(); return; }
   if (k === 'style' || REGEN.has(k)) regen();
@@ -1870,6 +1913,15 @@ function dropItem(it){
   if (it.type === 'video') { it.el.pause(); it.el.removeAttribute('src'); it.el.load(); }
   if (it.type === '3d' && it.m3) it.m3.dispose();
 }
+/* ================= Sekwencja po wyzwalaczu: krok w edytorze ================= */
+function seqStep(d){ if (!seqActive()) return; const n = seq.items.length, c = drv.want != null ? drv.want : drv.cur; seqGoTo(S.seqLoop ? (c + d + n) % n : c + d); refreshAll(); }
+function onSeqStep(){ refreshAll(); }
+addEventListener('keydown', e => {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  if (!seqActive() || S.seqMode !== 'trigger' || inText() || e.metaKey || e.ctrlKey || e.altKey) return;
+  const t = e.target; if (t && t.closest && t.closest('md-slider, md-outlined-select, .scrim')) return;
+  e.preventDefault(); seqStep(e.key === 'ArrowRight' ? 1 : -1);
+});
 /* ================= Brakujące pliki: „Wskaż plik ponownie” ================= */
 let missing = [], relinkFor = null;
 function missingCanvas(w, h){ const c = document.createElement('canvas'); c.width = Math.max(2, Math.min(1920, w || 1920)); c.height = Math.max(2, Math.min(1920, h || 1080)); const x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height); return c; }
@@ -2195,7 +2247,7 @@ function pickMime(){
 async function startRec(){
   if (!window.MediaRecorder || !cv.captureStream) { toast('Ta przeglądarka nie potrafi nagrywać płótna. Użyj Chrome albo Safari.'); return; }
   const mime = pickMime();
-  const isShow = showOn(), isSeq = seqActive();
+  const isShow = showOn() && !(seqActive() && S.seqMode === 'trigger'), isSeq = seqActive() && S.seqMode !== 'trigger';
   const isClip = !isShow && !isSeq && src && src.type === 'video' && S.recClip;
   const rewind = () => { if (isShow) { showT = 0; seqT = 0; morph = null; seq.cur = -1; } else if (isSeq) { seqT = 0; morph = null; seq.cur = -1; } needClear = true; };
   if (isShow || isSeq) {
@@ -2253,6 +2305,7 @@ function stanczykPlayer(root, CFG){
   const mouse = {x:0, y:0, active:false};
   const seq = {items:[], cur:-1};
   let seqT = 0, seqRun = null, morph = null, MA = new Float32Array(8), MB = new Float32Array(8);
+  const drv = {cur:0, want:null, from:0, to:0, p:0, active:false}; let onSeqStep = null;
   const EMPTY = {empty:true}; let showT = 0, showEmpty = false;
   const P = new Uint8Array(512);
   { const p = [...Array(256).keys()]; let s = 1337; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
@@ -2310,6 +2363,22 @@ function stanczykPlayer(root, CFG){
       cv.addEventListener('pointermove', e => { if (!d) return; d.P.m3ry = d.ry + (e.clientX - d.x) * 0.45; d.P.m3rx = Math.max(-90, Math.min(90, d.rx + (e.clientY - d.y) * 0.45)); });
       const up_ = () => { d = null; cv.style.cursor = ''; }; cv.addEventListener('pointerup', up_); cv.addEventListener('pointercancel', up_);
     }
+    // Sterowanie sekwencją ze strony: API (root.stanczyk) i sekcje oznaczone data-stanczyk-step
+    const total = seq.items.length, dr = CFG.drive || {mode:'auto'};
+    const kick = () => { if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); } };
+    onSeqStep = () => root.dispatchEvent(new CustomEvent('stanczyk:change', {bubbles:true, detail:{step:drv.cur + 1, total}}));
+    const goTo = n => { if (total < 2) return; S.seqMode = 'trigger'; seqGoTo(Math.round(+n) - 1); kick(); };
+    const at = () => (drv.want != null ? drv.want : drv.cur) + 1;
+    // sekcja zmienia element, gdy przecina środek ekranu (działa też przy przewijaniu w górę)
+    let io = null;
+    const scan = () => { if (dr.mode !== 'sections' || total < 2 || !window.IntersectionObserver) return 0;
+      if (io) io.disconnect(); io = new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting) goTo(+e.target.getAttribute('data-stanczyk-step')); }, {rootMargin:'-50% 0px -50% 0px'});
+      const name = root.getAttribute('data-stanczyk-name') || 'stanczyk';
+      const secs = [...document.querySelectorAll('[data-stanczyk-step]')].filter(el => (el.getAttribute('data-stanczyk') || 'stanczyk') === name);
+      secs.forEach(el => io.observe(el)); return secs.length; };
+    root.stanczyk = {goTo, next(){ goTo(Math.min(total, at() + 1)); }, prev(){ goTo(Math.max(1, at() - 1)); }, refresh: scan, get step(){ return drv.cur + 1; }, get total(){ return total; }};
+    // kod stoi zwykle przed sekcjami: szukamy ich dopiero, gdy cała strona jest wczytana
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scan, {once:true}); else scan();
     if (S.mouse !== 'off') {
       const pt = e => { const r = cv.getBoundingClientRect(); mouse.x = (e.clientX - r.left) / r.width * W; mouse.y = (e.clientY - r.top) / r.height * H; mouse.active = true; };
       cv.addEventListener('pointermove', pt); cv.addEventListener('pointerdown', pt); cv.addEventListener('pointerleave', () => { mouse.active = false; });
@@ -2322,10 +2391,34 @@ function stanczykPlayer(root, CFG){
   Promise.all(CFG.images.map(d => d.k === '3d' ? (L3 ? make3D(d) : null) : new Promise(res => { const im = new Image(); im.onload = () => res({el:im, w:im.naturalWidth, h:im.naturalHeight, ver:-1, pos:d.p}); im.onerror = () => res(null); im.src = d.u; })))
     .then(list => { list = list.filter(Boolean); if (!list.length) return; if (list.length >= 2) seq.items = list; else src = list[0]; start(); });
 }
-const ENGINE = {fade, lerp, grad, noise, mulberry, hex, lum3, shader, program, buildAtlas, sampleFrom, tick3D, tickLive, drawSample, ensureSample, invalidate, regen, step, seqActive, seqCycle, seqSpan, seqUpdate, showOn, showBody, showSpan, srcItem, showUpdate, toneCtx, toneOf, evalInto, buildPairs, twk, stepMorph, initExtras, upData, upPhoto, drawWatermark, drawTex, render};
+const ENGINE = {fade, lerp, grad, noise, mulberry, hex, lum3, shader, program, buildAtlas, sampleFrom, tick3D, tickLive, drawSample, ensureSample, invalidate, regen, step, seqActive, seqCycle, seqSpan, seqUpdate, seqDrive, seqGoTo, showOn, showBody, showSpan, srcItem, showUpdate, toneCtx, toneOf, evalInto, buildPairs, twk, stepMorph, initExtras, upData, upPhoto, drawWatermark, drawTex, render};
 function exportItems(){ return seqActive() ? seq.items.filter(it => it.type !== 'video' && !it.missing) : (src && (src.type === 'image' || src.type === '3d') ? [src] : []); }
 const exportOk = () => exportItems().length > 0;
 const skippedVideos = () => seqActive() ? seq.items.filter(it => it.type === 'video').length : 0;
+// Instrukcja w kodzie: jak sekcje albo kod strony zmieniają elementy sekwencji
+function driveHelp(drive, n){
+  if (drive === 'sections') return `<!-- ${L(`Zmiana elementów przy przewijaniu: oznacz sekcje strony atrybutem data-stanczyk-step z numerem elementu (1–${n}), np.
+  <section data-stanczyk-step="1">…</section>
+  <section data-stanczyk-step="2">…</section>
+  Element zmienia się, gdy sekcja dochodzi do środka ekranu. Przypnij animację obok tekstu: position:sticky; top:10vh.
+  Kilka animacji na stronie: zmień data-stanczyk-name="stanczyk" na własną nazwę i dodaj sekcjom data-stanczyk="ta-nazwa".
+  Ze skryptu: document.querySelector('.stanczyk').stanczyk.goTo(2) · .next() · .prev() · .refresh() (po dodaniu sekcji) · zdarzenie stanczyk:change.`, `Change items while scrolling: mark page sections with data-stanczyk-step and the item number (1–${n}), e.g.
+  <section data-stanczyk-step="1">…</section>
+  <section data-stanczyk-step="2">…</section>
+  The item changes when a section reaches the middle of the screen. Pin the animation next to the text: position:sticky; top:10vh.
+  Several animations on a page: change data-stanczyk-name="stanczyk" to your own name and give sections data-stanczyk="that-name".
+  From a script: document.querySelector('.stanczyk').stanczyk.goTo(2) · .next() · .prev() · .refresh() (after adding sections) · stanczyk:change event.`)} -->
+`;
+  if (drive === 'api') return `<!-- ${L(`Sterowanie z kodu (elementy 1–${n}):
+  const anim = document.querySelector('.stanczyk').stanczyk;
+  anim.goTo(2); anim.next(); anim.prev(); anim.step; anim.total;
+  document.querySelector('.stanczyk').addEventListener('stanczyk:change', e => console.log(e.detail.step));`, `Control from code (items 1–${n}):
+  const anim = document.querySelector('.stanczyk').stanczyk;
+  anim.goTo(2); anim.next(); anim.prev(); anim.step; anim.total;
+  document.querySelector('.stanczyk').addEventListener('stanczyk:change', e => console.log(e.detail.step));`)} -->
+`;
+  return '';
+}
 function buildExport(o){
   const items = exportItems();
   const images = items.map(it => { if (it.type === '3d') { const single = it === src, P = single ? S : it.p3, mo = single ? m3model : it.model;
@@ -2335,20 +2428,22 @@ function buildExport(o){
     return {u:c.toDataURL('image/jpeg', 0.86), p:it.pos || {x:0, y:0, z:1}}; });
   const m3 = images.some(d => d.k === '3d');
   const s = {...S, res:o.res, seqOn:images.length >= 2};
+  const drive = images.length >= 2 ? o.drive : 'auto';
+  s.seqMode = drive === 'auto' ? 'auto' : 'trigger';
   s.mouse = o.mouse ? (S.mouse === 'off' ? 'repel' : S.mouse) : 'off';
-  const cfg = {S:s, W, H, images, demo:DEMO, sh:[VS_PTS, FS_PTS, VS_FULL, FS_FULL, FS_TEX], alt: tr(images.length >= 2 ? `Animacja: sekwencja, ${photos(images.length)}` : 'Animacja z kropek')};
+  const cfg = {S:s, W, H, images, drive:{mode:drive}, demo:DEMO, sh:[VS_PTS, FS_PTS, VS_FULL, FS_FULL, FS_TEX], alt: tr(images.length >= 2 ? `Animacja: sekwencja, ${photos(images.length)}` : 'Animacja z kropek')};
   const engine = Object.entries(ENGINE).map(([n, f]) => `var ${n} = ${f.toString()};`).join('\n  ');
   const lib = m3 ? `var LIB3D = ${window.STANCZYK3D_LIB.toString()};` : 'var LIB3D = null;';
   const player = stanczykPlayer.toString().replace('/*LIB3D*/', () => lib).replace('/*ENGINE*/', () => engine).replace(/<\/script/gi, '<\\/script');
   const json = JSON.stringify(cfg).replace(/<\//g, '<\\/');
   const what = images.length >= 2 ? `sekwencja: ${photos(images.length)}, przejście ${((SEQ_TYPES.find(t => t[0] === S.seqType) || [, S.seqType])[1]).toLowerCase()}` : m3 ? 'bryła 3D' : 'jedno zdjęcie';
   return `<!-- ${tr(`Stańczyk: animacja (${what}). Wklej w miejscu strony, gdzie ma się pojawić; szerokość dopasuje się do kontenera.`)} -->
-<div class="stanczyk" style="position:relative;width:100%;aspect-ratio:${W} / ${H};background:${S.bg};overflow:hidden"></div>
+${driveHelp(drive, images.length)}<div class="stanczyk" data-stanczyk-name="stanczyk" style="position:relative;width:100%;aspect-ratio:${W} / ${H};background:${S.bg};overflow:hidden"></div>
 <script>
 (${player})(document.currentScript.previousElementSibling, ${json});
 </` + `script>`;
 }
-let exOpts = {mouse:true, imgMax:1000, res:1080}, exT = 0;
+let exOpts = {mouse:true, imgMax:1000, res:1080, drive:null}, exT = 0;
 function refreshExport(){
   const items = exportItems(), ok = exportOk();
   $('#exInfo').textContent = tr(ok
@@ -2357,6 +2452,10 @@ function refreshExport(){
        : 'Eksportuję bieżące zdjęcie z obecnymi ustawieniami. Animacja dopasuje się do szerokości miejsca na stronie i zatrzyma, gdy nie będzie jej widać.')
     : seqActive() ? 'W sekwencji jest za mało elementów do eksportu: wideo nie trafia do kodu na stronę. Dodaj zdjęcia albo bryły 3D.'
     : 'Eksport działa ze zdjęciem, bryłą 3D albo sekwencją. Bieżące źródło to wideo: nagraj je przyciskiem „Nagraj wideo” albo dodaj zdjęcia do sekwencji.');
+  const seqOk = ok && seqActive() && items.length >= 2; $('#exDriveRow').hidden = !seqOk;
+  if (seqOk && exOpts.drive !== 'auto') $('#exInfo').textContent += ' ' + (exOpts.drive === 'sections'
+    ? L('Na stronie element zmieni się, gdy sekcja z atrybutem data-stanczyk-step dojdzie do środka ekranu (instrukcja jest na początku kodu).', 'On the page the item changes when a section with data-stanczyk-step reaches the middle of the screen (instructions are at the top of the code).')
+    : L('Na stronie elementy zmienia Twój skrypt: goTo(n), next(), prev() (instrukcja jest na początku kodu).', 'On the page your script changes items: goTo(n), next(), prev() (instructions are at the top of the code).'));
   if (ok && skippedVideos()) $('#exInfo').textContent += ' ' + tr(`Wideo z sekwencji (${skippedVideos()}) nie trafia do kodu: pomijam je.`);
   $('#exOpts').hidden = $('#exCode').hidden = $('#exSize').hidden = !ok;
   $('#exCopy').disabled = $('#exFile').disabled = !ok;
@@ -2378,7 +2477,8 @@ document.addEventListener('keydown', e => {
   if (!inside || (e.shiftKey && act === first) || (!e.shiftKey && act === last)) { e.preventDefault(); (e.shiftKey ? last : first).focus(); }
 }, true);
 function openExport(){
-  $('#exMouse').selected = exOpts.mouse; $('#exImg').value = String(exOpts.imgMax); $('#exRes').value = String(exOpts.res);
+  if (!exOpts.drive) exOpts.drive = S.seqMode === 'trigger' ? 'sections' : 'auto';
+  $('#exMouse').selected = exOpts.mouse; $('#exImg').value = String(exOpts.imgMax); $('#exRes').value = String(exOpts.res); $('#exDrive').value = exOpts.drive;
   $('#exScrim').hidden = false; refreshExport(); dialogOpen($('#exScrim'));
 }
 function closeExport(){ if ($('#exScrim').hidden) return; $('#exScrim').hidden = true; $('#exCode').value = ''; dialogClose($('#exScrim')); }
@@ -2390,14 +2490,25 @@ const exChanged = () => { clearTimeout(exT); exT = setTimeout(refreshExport, 120
 $('#exMouse').addEventListener('change', () => { exOpts.mouse = $('#exMouse').selected; exChanged(); });
 $('#exImg').addEventListener('change', () => { exOpts.imgMax = +$('#exImg').value; exChanged(); });
 $('#exRes').addEventListener('change', () => { exOpts.res = +$('#exRes').value; exChanged(); });
+$('#exDrive').addEventListener('change', () => { exOpts.drive = $('#exDrive').value; exChanged(); });
 $('#exCopy').addEventListener('click', () => {
   const ta = $('#exCode');
   const fallback = () => { ta.focus(); ta.select(); toast('Kod jest zaznaczony. Skopiuj go skrótem ⌘C / Ctrl+C.'); };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(() => toast('Skopiowano kod. Wklej go na swojej stronie.'), fallback); else fallback();
 });
 $('#exFile').addEventListener('click', () => {
-  const html = `<!doctype html>\n<html lang="${lang}">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>${tr('Stańczyk — animacja')}</title>\n<style>html,body{margin:0;background:${S.bg}}main{max-width:1080px;margin:0 auto}</style>\n</head>\n<body>\n<main>\n${$('#exCode').value}\n</main>\n</body>\n</html>\n`;
-  const n = `stanczyk-animacja-${stamp()}.html`; saveOut(new Blob([html], {type:'text/html'}), n);
+  const n = exportItems().length, drive = seqActive() && n >= 2 ? exOpts.drive : 'auto', ink = lum3(hex(S.bg)) < 0.5 ? '#ECEAE4' : '#141414';
+  let body = `<main>\n${$('#exCode').value}\n</main>`, css = `html,body{margin:0;background:${S.bg};color:${ink};font:16px/1.5 system-ui,sans-serif}main{max-width:1080px;margin:0 auto}`;
+  if (drive === 'sections') {
+    css += `.wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;max-width:1200px;margin:0 auto;padding:0 24px}.pin{position:sticky;top:10vh;height:80vh;display:flex;align-items:center}.pin>.stanczyk{width:100%}section{min-height:100vh;display:flex;align-items:center}section h2{font-size:32px;margin:0 0 8px}@media(max-width:800px){.wrap{grid-template-columns:1fr}.pin{top:0;height:auto;z-index:1;background:${S.bg}}section{min-height:80vh}}`;
+    const secs = Array.from({length:n}, (_, i) => `  <section data-stanczyk-step="${i + 1}"><div><h2>${L('Element', 'Item')} ${i + 1}</h2><p>${L(i < n - 1 ? 'Przewiń dalej, aby zobaczyć kolejny element.' : 'To ostatni element sekwencji.', i < n - 1 ? 'Scroll on to see the next item.' : 'This is the last item of the sequence.')}</p></div></section>`).join('\n');
+    body = `<div class="wrap">\n<div class="pin">\n${$('#exCode').value}\n</div>\n<div>\n${secs}\n</div>\n</div>`;
+  } else if (drive === 'api') {
+    css += `.ctl{display:flex;gap:12px;justify-content:center;align-items:center;padding:16px}.ctl button{font:inherit;padding:8px 16px;border-radius:20px;border:1px solid currentColor;background:none;color:inherit;cursor:pointer}`;
+    body = `<main>\n${$('#exCode').value}\n<div class="ctl"><button type="button" id="prev">${L('Poprzedni', 'Previous')}</button><span id="lab"></span><button type="button" id="next">${L('Następny', 'Next')}</button></div>\n</main>\n<script>\nconst el = document.querySelector('.stanczyk'), lab = document.getElementById('lab');\nconst show = () => { const a = el.stanczyk; if (a) lab.textContent = a.step + ' / ' + a.total; };\ndocument.getElementById('prev').onclick = () => el.stanczyk && el.stanczyk.prev();\ndocument.getElementById('next').onclick = () => el.stanczyk && el.stanczyk.next();\nel.addEventListener('stanczyk:change', show); setTimeout(show, 500);\n</` + `script>`;
+  }
+  const html = `<!doctype html>\n<html lang="${lang}">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>${tr('Stańczyk — animacja')}</title>\n<style>${css}</style>\n</head>\n<body>\n${body}\n</body>\n</html>\n`;
+  saveOut(new Blob([html], {type:'text/html'}), `stanczyk-animacja-${stamp()}.html`);
 });
 
 /* ================= Ustawienia projektu: scena i nagrywanie ================= */

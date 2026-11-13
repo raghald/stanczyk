@@ -155,6 +155,10 @@ window.STANCZYK_EN = {
   'Tych plików nie ma już w zapisanym miejscu. Wskaż je ponownie — miejsce w sekwencji, kadr i ustawienia zostaną zachowane.': 'These files are no longer where they were saved. Locate them again — their place in the sequence, framing and settings are kept.',
   'Rozdzielczość PNG i wideo': 'PNG and video resolution',
   'Projekt jeszcze nie jest zapisany ': 'The project has not been saved yet',
+  // sekwencja po wyzwalaczu
+  'Po czasie': 'Timed', 'Po wyzwalaczu': 'On trigger',
+  'Na stronie element zmienia przewijanie do sekcji albo Twój kod (wybierzesz w „Kod na stronę”). Tutaj przełączasz go strzałkami ← → albo miniaturami.': 'On the page, scrolling to a section or your code changes the item (choose in “Web embed code”). Here you switch it with ← → arrows or thumbnails.',
+  'Zmiana elementów sekwencji': 'Sequence item change', 'Przy zmianie sekcji strony': 'When a page section changes', 'Z kodu strony (API)': 'From page code (API)',
   // pliki, komunikaty
   'Zapisano {0}': 'Saved {0}',
   'Wczytano model „{0}”.': 'Loaded model “{0}”.',

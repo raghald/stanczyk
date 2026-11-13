@@ -5,3 +5,5 @@ _test*
 node_modules/
 dist/
 src/font.json
+dist122/
+dist*/
