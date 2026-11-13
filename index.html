@@ -1312,8 +1312,7 @@ const M3_SHAPES = [['sphere','Kula'],['box','Sześcian'],['torus','Torus'],['kno
 const SECTIONS = [
   {id:'presets', title:'Gotowe ustawienia', open:true, items:[{t:'presets'}]},
   {id:'m3', title:'Bryła 3D', open:true, items:[
-    {t:'note', text:() => is3D() ? (m3Item() ? `Ustawiasz bryłę: ${frameTarget().label}. ` : '') + 'Przeciągnij bryłę na podglądzie, aby ją obrócić. Kółko myszy przybliża kamerę.'
-      : seqActive() ? 'Wybierz bryłę albo wgraj model, aby dodać go na koniec sekwencji.' : 'Wybierz bryłę albo wgraj model (GLB, GLTF, OBJ, STL). Wszystkie efekty działają na obracającej się bryle.'},
+    {t:'note', text:() => seqActive() ? 'Wybierz bryłę albo wgraj model, aby dodać go na koniec sekwencji.' : 'Wybierz bryłę albo wgraj model (GLB, GLTF, OBJ, STL). Wszystkie efekty działają na obracającej się bryle.', when:() => !is3D()},
     {t:'m3shapes'},
     {t:'m3text', when:() => is3D() && S.m3shape === 'text'},
     {t:'button', text:'Wgraj model 3D…', act:() => $('#file3d').click()},
@@ -1338,13 +1337,11 @@ const SECTIONS = [
     {t:'button', text:'Dodaj bieżące źródło do sekwencji', act:() => addCurrentToSeq(), when:() => !!src && !seqActive()},
     {t:'check', k:'seqOn', l:'Odtwarzaj sekwencję', when:hasSeq},
     {t:'chips', k:'seqType', opts:SEQ_TYPES, when:() => hasSeq() && S.seqOn},
-    {t:'note', text:() => SEQ_HINT[S.seqType], when:() => hasSeq() && S.seqOn},
     {t:'range', k:'seqHold', l:'Czas pokazu zdjęcia', min:0.2, max:10, step:0.1, f:v => v.toFixed(1) + ' s', when:() => hasSeq() && S.seqOn},
     {t:'range', k:'seqTrans', l:'Czas przejścia', min:0.3, max:8, step:0.1, f:v => v.toFixed(1) + ' s', when:() => hasSeq() && S.seqOn},
     {t:'range', k:'seqForce', l:'Siła przejścia', min:0, max:3, step:0.01, f:f2, when:() => hasSeq() && S.seqOn && S.seqType !== 'fade'},
     {t:'check', k:'seqLoop', l:'Zapętl (z ostatniego wraca do pierwszego)', when:() => hasSeq() && S.seqOn}]},
   {id:'show', title:'Wejście i wyjście', open:true, items:[
-    {t:'note', text:'Animacja pojawiania się i znikania obiektu. Działa dla zdjęcia i dla całej sekwencji.'},
     {t:'label', text:'Wejście'},
     {t:'chips', k:'inType', opts:[['none','Brak'], ...SEQ_TYPES]},
     {t:'range', k:'inDur', l:'Czas wejścia', min:0.3, max:6, step:0.1, f:v => v.toFixed(1) + ' s', when:() => S.inType !== 'none'},
@@ -1382,12 +1379,10 @@ const SECTIONS = [
     {t:'seg', k:'colorMode', opts:[['mono','Jednolity'],['source','Z obrazu'],['duo','Dwa kolory']]},
     {t:'range', k:'grain', l:'Ziarno papieru', min:0, max:0.5, step:0.01, f:f2}]},
   {id:'glow', title:'Świecenie', pop:'flare', open:true, items:[
-    {t:'note', text:'Efekt ekranu LED: poświata wokół kropek, podświetlone tło w kolorze jednostek i migoczące diody.'},
     {t:'range', k:'glow', l:'Poświata kropek', min:0, max:1, step:0.01, f:f2},
     {t:'range', k:'backlight', l:'Podświetlenie tła', min:0, max:1, step:0.01, f:f2},
     {t:'range', k:'twinkle', l:'Migotanie', min:0, max:1, step:0.01, f:f2}]},
   {id:'region', title:'Okno (maska)', open:true, items:[
-    {t:'note', text:'Ogranicza dowolny efekt do prostokąta. Działa niezależnie od stylu i presetów.'},
     {t:'check', k:'region', l:'Pokaż efekt tylko w oknie'},
     {t:'regionEdit', when:() => S.region},
     {t:'label', text:'Poza oknem', when:() => S.region},
@@ -2345,7 +2340,6 @@ function refreshExport(){
     : 'Eksport działa ze zdjęciem, bryłą 3D albo sekwencją. Bieżące źródło to wideo: nagraj je przyciskiem „Nagraj wideo” albo dodaj zdjęcia do sekwencji.');
   if (ok && skippedVideos()) $('#exInfo').textContent += ' ' + tr(`Wideo z sekwencji (${skippedVideos()}) nie trafia do kodu: pomijam je.`);
   $('#exOpts').hidden = $('#exCode').hidden = $('#exSize').hidden = !ok;
-  if (ok && DEMO) $('#exInfo').textContent += ' ' + tr('Wersja demo dodaje w prawym dolnym rogu znak @fritzglowacki.');
   $('#exCopy').disabled = $('#exFile').disabled = !ok;
   if (!ok) return;
   const code = buildExport(exOpts);
