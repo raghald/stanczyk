@@ -159,6 +159,10 @@ window.STANCZYK_EN = {
   'Po czasie': 'Timed', 'Po wyzwalaczu': 'On trigger',
   'Na stronie element zmienia przewijanie do sekcji albo Twój kod (wybierzesz w „Kod na stronę”). Tutaj przełączasz go strzałkami ← → albo miniaturami.': 'On the page, scrolling to a section or your code changes the item (choose in “Web embed code”). Here you switch it with ← → arrows or thumbnails.',
   'Zmiana elementów sekwencji': 'Sequence item change', 'Przy zmianie sekcji strony': 'When a page section changes', 'Z kodu strony (API)': 'From page code (API)',
+  'Format kodu': 'Code format', 'HTML (Embed, dowolna strona)': 'HTML (Embed, any site)', 'Komponent Framera (.tsx)': 'Framer component (.tsx)',
+  'Osadzenie': 'Placement', 'W treści strony': 'In page content', 'Jako tło (mysz przechodzi dalej)': 'As a background (mouse passes through)',
+  'Sekcje strony (po kolei: element 1, 2, …)': 'Page sections (in order: item 1, 2, …)',
+  'ID sekcji (np. oferta albo #oferta) lub selektor CSS (.sekcja-oferta). Puste pole = sekcje z atrybutem data-stanczyk-step.': 'Section ID (e.g. offer or #offer) or a CSS selector (.offer-section). Empty = sections with the data-stanczyk-step attribute.',
   // pliki, komunikaty
   'Zapisano {0}': 'Saved {0}',
   'Wczytano model „{0}”.': 'Loaded model “{0}”.',

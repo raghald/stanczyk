@@ -118,6 +118,7 @@ md-icon svg{width:100%;height:100%;fill:currentColor;display:block}
 .tfield.error input,.tfield.error input:focus{border:2px solid var(--md-sys-color-error);padding:0 13px}
 .tfield .tc-hint{font:400 12px/16px var(--font-ui);letter-spacing:.4px;color:var(--md-sys-color-error)}
 .tfield .tc-hint:empty{display:none}
+.tfield .sec-note{font:400 12px/16px var(--font-ui);letter-spacing:.4px;color:var(--md-sys-color-on-surface-variant)}
 .tfield input[inputmode=numeric]{font-variant-numeric:tabular-nums}
 .tfield input:focus{border:2px solid var(--md-sys-color-primary);padding:0 13px}
 #cv.editing{cursor:grab}
@@ -389,12 +390,23 @@ md-filter-chip[selected]:active{--md-filter-chip-selected-container-color:var(--
           <md-select-option value="1440"><div slot="headline">1440 px</div></md-select-option>
         </md-outlined-select>
       </div>
-      <div id="exDriveRow">
+      <div class="drow">
+        <md-outlined-select id="exFormat" label="Format kodu">
+          <md-select-option value="html" selected><div slot="headline">HTML (Embed, dowolna strona)</div></md-select-option>
+          <md-select-option value="framer"><div slot="headline">Komponent Framera (.tsx)</div></md-select-option>
+        </md-outlined-select>
+        <md-outlined-select id="exEmbed" label="Osadzenie">
+          <md-select-option value="block" selected><div slot="headline">W treści strony</div></md-select-option>
+          <md-select-option value="bg"><div slot="headline">Jako tło (mysz przechodzi dalej)</div></md-select-option>
+        </md-outlined-select>
+      </div>
+      <div id="exDriveRow" class="dopts">
         <md-outlined-select id="exDrive" label="Zmiana elementów sekwencji">
           <md-select-option value="auto"><div slot="headline">Po czasie</div></md-select-option>
           <md-select-option value="sections"><div slot="headline">Przy zmianie sekcji strony</div></md-select-option>
           <md-select-option value="api"><div slot="headline">Z kodu strony (API)</div></md-select-option>
         </md-outlined-select>
+        <label class="tfield" id="exSecRow"><span>Sekcje strony (po kolei: element 1, 2, …)</span><input id="exSections" type="text" spellcheck="false" autocomplete="off" placeholder="#start, #oferta, #kontakt"><small class="tc-hint" id="exSecHint"></small><small class="sec-note">ID sekcji (np. oferta albo #oferta) lub selektor CSS (.sekcja-oferta). Puste pole = sekcje z atrybutem data-stanczyk-step.</small></label>
       </div>
     </div>
     <textarea id="exCode" readonly spellcheck="false" aria-label="Kod do wklejenia na stronę"></textarea>
@@ -2298,7 +2310,7 @@ function stanczykPlayer(root, CFG){
   cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', CFG.alt || 'Animacja');
   root.appendChild(cv);
   const gl = cv.getContext('webgl2', {antialias:false, preserveDrawingBuffer:true, alpha:false, premultipliedAlpha:false});
-  if (!gl) { cv.remove(); const d0 = CFG.images.find(d => d.u); if (d0) { const im = new Image(); im.src = d0.u; im.alt = CFG.alt || ''; im.style.cssText = 'display:block;width:100%;height:100%;object-fit:cover'; root.appendChild(im); } return; }
+  if (!gl) { cv.remove(); const d0 = CFG.images.find(d => d.u); if (d0) { const im = new Image(); im.src = d0.u; im.alt = CFG.alt || ''; im.style.cssText = 'display:block;width:100%;height:100%;object-fit:cover'; root.appendChild(im); } return () => {}; }
   let W = 2, H = 2, cellPx = 12, N = 0, gridVer = 0, lookVer = 0, HX, HY, PX, PY, VX, VY, SA, SB, buf = new Float32Array(8), needClear = true;
   let LUM = new Float32Array(1), RGB = new Uint8ClampedArray(4), sw = 1, sh = 1, sampleDirty = true, sampleVer = 0;
   let T = 0, FRN = 0, DT = 0, playing = true, scrubbing = false, src = null;
@@ -2307,6 +2319,7 @@ function stanczykPlayer(root, CFG){
   let seqT = 0, seqRun = null, morph = null, MA = new Float32Array(8), MB = new Float32Array(8);
   const drv = {cur:0, want:null, from:0, to:0, p:0, active:false}; let onSeqStep = null;
   const EMPTY = {empty:true}; let showT = 0, showEmpty = false;
+  let dead = false; const off = []; // sprzątanie po odmontowaniu (np. komponent Framera)
   const P = new Uint8Array(512);
   { const p = [...Array(256).keys()]; let s = 1337; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
     for (let i = 255; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; }
@@ -2334,13 +2347,14 @@ function stanczykPlayer(root, CFG){
   function size(){
     const r = root.getBoundingClientRect(); if (!r.width) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    let w = r.width * dpr, h = w * CFG.H / CFG.W; const k = Math.min(1, S.res / Math.min(w, h));
+    // tło / komponent: wypełnia cały kontener (obraz kadruje się jak cover); w treści: zachowuje proporcje kadru
+    let w = r.width * dpr, h = CFG.fill && r.height ? r.height * dpr : w * CFG.H / CFG.W; const k = Math.min(1, S.res / Math.min(w, h));
     w = Math.max(2, Math.round(w * k)); h = Math.max(2, Math.round(h * k)); w += w & 1; h += h & 1;
     if (w !== W || h !== H) { W = w; H = h; cv.width = W; cv.height = H; regen(); }
     if (!raf) raf = requestAnimationFrame(frame);
   }
   function frame(now){
-    raf = 0; const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    raf = 0; if (dead) return; const dt = Math.min(0.05, (now - last) / 1000); last = now;
     if (playing) T += dt * S.speed;
     FRN++; DT = dt;
     tick3D(dt);
@@ -2353,8 +2367,8 @@ function stanczykPlayer(root, CFG){
   function start(){
     if (reduced) playing = false;
     size();
-    if (window.ResizeObserver) new ResizeObserver(size).observe(root); else addEventListener('resize', size);
-    if (window.IntersectionObserver) new IntersectionObserver(es => { visible = es[0].isIntersecting; if (visible && !raf) { last = performance.now(); raf = requestAnimationFrame(frame); } }).observe(root);
+    if (window.ResizeObserver) { const ro = new ResizeObserver(size); ro.observe(root); off.push(() => ro.disconnect()); } else { addEventListener('resize', size); off.push(() => removeEventListener('resize', size)); }
+    if (window.IntersectionObserver) { const vo = new IntersectionObserver(es => { visible = es[0].isIntersecting; if (visible && !raf && !dead) { last = performance.now(); raf = requestAnimationFrame(frame); } }); vo.observe(root); off.push(() => vo.disconnect()); }
     if ((src && src.type === '3d') || seq.items.some(it => it.type === '3d')) {
       // przeciąganie myszą obraca widoczną bryłę (na dotyku zostawiamy przewijanie strony)
       const tgt = () => { const it = seq.items.length >= 2 ? seq.items[Math.max(0, seq.cur)] : src; return it && it.type === '3d' ? (it.p3 || S) : null; };
@@ -2370,18 +2384,28 @@ function stanczykPlayer(root, CFG){
     const goTo = n => { if (total < 2) return; S.seqMode = 'trigger'; seqGoTo(Math.round(+n) - 1); kick(); };
     const at = () => (drv.want != null ? drv.want : drv.cur) + 1;
     // sekcja zmienia element, gdy przecina środek ekranu (działa też przy przewijaniu w górę)
-    let io = null;
+    // sekcje: lista ID/selektorów CSS (1. pozycja = element 1…) albo atrybut data-stanczyk-step
+    let io = null; const stepOf = new Map();
     const scan = () => { if (dr.mode !== 'sections' || total < 2 || !window.IntersectionObserver) return 0;
-      if (io) io.disconnect(); io = new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting) goTo(+e.target.getAttribute('data-stanczyk-step')); }, {rootMargin:'-50% 0px -50% 0px'});
-      const name = root.getAttribute('data-stanczyk-name') || 'stanczyk';
-      const secs = [...document.querySelectorAll('[data-stanczyk-step]')].filter(el => (el.getAttribute('data-stanczyk') || 'stanczyk') === name);
-      secs.forEach(el => io.observe(el)); return secs.length; };
-    root.stanczyk = {goTo, next(){ goTo(Math.min(total, at() + 1)); }, prev(){ goTo(Math.max(1, at() - 1)); }, refresh: scan, get step(){ return drv.cur + 1; }, get total(){ return total; }};
+      if (io) io.disconnect(); stepOf.clear();
+      io = new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting && stepOf.has(e.target)) goTo(stepOf.get(e.target)); }, {rootMargin:'-50% 0px -50% 0px'});
+      if (dr.sel && dr.sel.length) dr.sel.forEach((q, i) => { let els = []; try { els = [...document.querySelectorAll(q)]; } catch (e) {} els.forEach(el => { if (!stepOf.has(el)) stepOf.set(el, i + 1); }); });
+      else { const name = root.getAttribute('data-stanczyk-name') || 'stanczyk';
+        document.querySelectorAll('[data-stanczyk-step]').forEach(el => { if ((el.getAttribute('data-stanczyk') || 'stanczyk') === name) stepOf.set(el, +el.getAttribute('data-stanczyk-step')); }); }
+      stepOf.forEach((_, el) => io.observe(el));
+      if (!stepOf.size && window.console) console.warn('Stańczyk: ' + (window !== window.top ? 'animacja jest w ramce (iframe) i nie widzi sekcji strony — wklej kod bezpośrednio do strony albo użyj komponentu kreatora.' : 'nie znaleziono sekcji (' + (dr.sel && dr.sel.length ? dr.sel.join(', ') : '[data-stanczyk-step]') + ').'));
+      return stepOf.size; };
+    const setSections = list => { dr.mode = 'sections'; dr.sel = (Array.isArray(list) ? list : String(list || '').split(/[,\n]+/)).map(x => x.trim()).filter(Boolean).map(x => /^[A-Za-z][\w-]*$/.test(x) ? '#' + x : x); return scan(); };
+    off.push(() => { if (io) io.disconnect(); });
+    root.stanczyk = {goTo, next(){ goTo(Math.min(total, at() + 1)); }, prev(){ goTo(Math.max(1, at() - 1)); }, refresh: scan, setSections, get step(){ return drv.cur + 1; }, get total(){ return total; }};
     // kod stoi zwykle przed sekcjami: szukamy ich dopiero, gdy cała strona jest wczytana
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scan, {once:true}); else scan();
     if (S.mouse !== 'off') {
-      const pt = e => { const r = cv.getBoundingClientRect(); mouse.x = (e.clientX - r.left) / r.width * W; mouse.y = (e.clientY - r.top) / r.height * H; mouse.active = true; };
-      cv.addEventListener('pointermove', pt); cv.addEventListener('pointerdown', pt); cv.addEventListener('pointerleave', () => { mouse.active = false; });
+      // mysz śledzona na całej stronie: kropki reagują też wtedy, gdy nad animacją leży tekst albo animacja jest tłem (pointer-events: none)
+      const pt = e => { const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; mouse.active = x >= 0 && y >= 0 && x <= r.width && y <= r.height; mouse.x = x / r.width * W; mouse.y = y / r.height * H; };
+      const out = e => { if (!e.relatedTarget) mouse.active = false; };
+      addEventListener('pointermove', pt, {passive:true}); addEventListener('pointerdown', pt, {passive:true}); document.addEventListener('pointerout', out);
+      off.push(() => { removeEventListener('pointermove', pt); removeEventListener('pointerdown', pt); document.removeEventListener('pointerout', out); });
     }
   }
   const L3 = LIB3D ? LIB3D() : null;
@@ -2389,14 +2413,79 @@ function stanczykPlayer(root, CFG){
     m3.setSize(d.w, d.h); const ok = () => res(it);
     if (d.model) fetch(d.model.data).then(r => r.arrayBuffer()).then(b => m3.setModel(b, d.model.ext)).then(ok, ok); else ok(); });
   Promise.all(CFG.images.map(d => d.k === '3d' ? (L3 ? make3D(d) : null) : new Promise(res => { const im = new Image(); im.onload = () => res({el:im, w:im.naturalWidth, h:im.naturalHeight, ver:-1, pos:d.p}); im.onerror = () => res(null); im.src = d.u; })))
-    .then(list => { list = list.filter(Boolean); if (!list.length) return; if (list.length >= 2) seq.items = list; else src = list[0]; start(); });
+    .then(list => { if (dead) return; list = list.filter(Boolean); if (!list.length) return; if (list.length >= 2) seq.items = list; else src = list[0]; start(); });
+  return () => {
+    dead = true; if (raf) cancelAnimationFrame(raf); raf = 0;
+    off.forEach(f => { try { f(); } catch (e) {} });
+    for (const it of [src, ...seq.items]) if (it && it.m3) try { it.m3.dispose(); } catch (e) {}
+    const lc = gl.getExtension('WEBGL_lose_context'); if (lc) lc.loseContext();
+    cv.remove(); try { delete root.stanczyk; } catch (e) {}
+  };
 }
 const ENGINE = {fade, lerp, grad, noise, mulberry, hex, lum3, shader, program, buildAtlas, sampleFrom, tick3D, tickLive, drawSample, ensureSample, invalidate, regen, step, seqActive, seqCycle, seqSpan, seqUpdate, seqDrive, seqGoTo, showOn, showBody, showSpan, srcItem, showUpdate, toneCtx, toneOf, evalInto, buildPairs, twk, stepMorph, initExtras, upData, upPhoto, drawWatermark, drawTex, render};
 function exportItems(){ return seqActive() ? seq.items.filter(it => it.type !== 'video' && !it.missing) : (src && (src.type === 'image' || src.type === '3d') ? [src] : []); }
 const exportOk = () => exportItems().length > 0;
 const skippedVideos = () => seqActive() ? seq.items.filter(it => it.type === 'video').length : 0;
+// Komponent kodu Framera: ten sam odtwarzacz, ale w dokumencie strony (Embed zamyka kod w iframe i kursor Framera zatrzymuje się na jego granicy)
+function framerComponent(player, json, what, n, sel, drive){
+  const seqN = n >= 2 ? n : 0, iw = 600, ih = Math.round(600 * H / W);
+  return `// ${L(`Stańczyk — komponent kodu dla Framera (${what}).`, `Stańczyk — Framer code component (${what}).`)}
+// ${L('Framer: Assets → Code → + → New Code File, wklej całość i zapisz. Komponent „Stanczyk” wstawisz z panelu Assets,', 'Framer: Assets → Code → + → New Code File, paste everything and save. Insert the “Stanczyk” component from the Assets panel,')}
+// ${L('także jako tło: rozciągnij go na całą sekcję i ustaw pod treścią. Działa w dokumencie strony (nie w iframe jak Embed),', 'also as a background: stretch it over the whole section and place it under the content. It runs in the page document (not in an iframe like Embed),')}
+// ${L('więc kursor Framera zostaje widoczny nad animacją.', 'so the Framer cursor stays visible over the animation.')}${seqN ? `
+// ${L(`Sekcje: wpisz ID sekcji strony po kolei (np. start, oferta, kontakt) — obraz zmieni się, gdy sekcja dojdzie do środka ekranu.`, `Sections: enter the page section IDs in order (e.g. start, offer, contact) — the image changes when a section reaches the middle of the screen.`)}
+// ${L(`Element (1–${seqN}) zmienisz też wariantami i interakcjami Framera, 0 = według sekcji / ustawień eksportu.`, `You can also set the item (1–${seqN}) with Framer variants and interactions; 0 = by sections / export settings.`)}` : ''}
+// @ts-nocheck
+import { useEffect, useRef } from "react"
+import { addPropertyControls, ControlType } from "framer"
+
+const CFG = ${json}
+
+const stanczykPlayer = ${player}
+
+/**
+ * @framerSupportedLayoutWidth any-prefer-fixed
+ * @framerSupportedLayoutHeight any-prefer-fixed
+ * @framerIntrinsicWidth ${iw}
+ * @framerIntrinsicHeight ${ih}
+ */
+export default function Stanczyk(props) {
+    const { background = true, step = 0, sections = "", style } = props
+    const ref = useRef(null)
+    useEffect(() => {
+        const el = ref.current
+        if (!el) return
+        const sel = String(sections).split(/[,\\n]+/).map((x) => x.trim()).filter(Boolean).map((x) => (/^[A-Za-z][\\w-]*$/.test(x) ? "#" + x : x))
+        const cfg = sel.length ? { ...CFG, drive: { ...CFG.drive, mode: "sections", sel } } : CFG
+        const stop = stanczykPlayer(el, cfg)
+        return () => { if (typeof stop === "function") stop() }
+    }, [sections])
+    useEffect(() => {
+        if (!(step > 0)) return
+        const t = setInterval(() => { const a = ref.current && ref.current.stanczyk; if (a) { a.goTo(step); clearInterval(t) } }, 100)
+        return () => clearInterval(t)
+    }, [step, sections])
+    return <div ref={ref} aria-hidden={background ? "true" : undefined} style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden", background: CFG.S.bg, pointerEvents: background ? "none" : "auto", ...style }} />
+}
+
+addPropertyControls(Stanczyk, {
+    background: { type: ControlType.Boolean, title: "${L('Tło', 'Background')}", defaultValue: true, enabledTitle: "${L('Tak', 'Yes')}", disabledTitle: "${L('Nie', 'No')}", description: "${L('Mysz przechodzi przez animację do warstw pod spodem.', 'The mouse passes through to layers below.')}" },${seqN ? `
+    step: { type: ControlType.Number, title: "${L('Element', 'Item')}", defaultValue: 0, min: 0, max: ${seqN}, step: 1, displayStepper: true },
+    sections: { type: ControlType.String, title: "${L('Sekcje', 'Sections')}", defaultValue: ${JSON.stringify((sel || []).join(', '))}, placeholder: "#start, #oferta, #kontakt", description: "${L('ID sekcji po kolei (element 1, 2, …). Obraz zmienia się, gdy sekcja dojdzie do środka ekranu.', 'Section IDs in order (item 1, 2, …). The image changes when a section reaches the middle of the screen.')}" },` : ''}
+})
+`;
+}
 // Instrukcja w kodzie: jak sekcje albo kod strony zmieniają elementy sekwencji
-function driveHelp(drive, n){
+function driveHelp(drive, n, sel){
+  if (drive === 'sections' && sel && sel.length) return `<!-- ${L(`Zmiana elementów przy przewijaniu: element zmienia się, gdy sekcja dochodzi do środka ekranu (także przy przewijaniu w górę).
+${sel.map((q, i) => `  ${i < n ? 'element ' + (i + 1) : '(nadmiarowa)'} ← ${q}`).join('\n')}
+  Nadaj sekcjom te ID albo klasy: WordPress — „Kotwica HTML” w ustawieniach bloku, Webflow i Framer — ID sekcji.
+  Kod wklej bezpośrednio do strony (blok HTML / Custom Code), nie w ramkę iframe — z ramki animacja nie widzi sekcji.
+  Ze skryptu: document.querySelector('.stanczyk').stanczyk.setSections(['#a', '#b']) · .goTo(2) · .refresh() · zdarzenie stanczyk:change.`, `Change items while scrolling: the item changes when a section reaches the middle of the screen (also when scrolling up).
+${sel.map((q, i) => `  ${i < n ? 'item ' + (i + 1) : '(extra)'} ← ${q}`).join('\n')}
+  Give your sections these IDs or classes: WordPress — “HTML anchor” in block settings, Webflow and Framer — section ID.
+  Paste the code directly into the page (HTML block / Custom Code), not in an iframe — from a frame the animation cannot see the sections.
+  From a script: document.querySelector('.stanczyk').stanczyk.setSections(['#a', '#b']) · .goTo(2) · .refresh() · stanczyk:change event.`)} -->\n`;
   if (drive === 'sections') return `<!-- ${L(`Zmiana elementów przy przewijaniu: oznacz sekcje strony atrybutem data-stanczyk-step z numerem elementu (1–${n}), np.
   <section data-stanczyk-step="1">…</section>
   <section data-stanczyk-step="2">…</section>
@@ -2431,19 +2520,30 @@ function buildExport(o){
   const drive = images.length >= 2 ? o.drive : 'auto';
   s.seqMode = drive === 'auto' ? 'auto' : 'trigger';
   s.mouse = o.mouse ? (S.mouse === 'off' ? 'repel' : S.mouse) : 'off';
-  const cfg = {S:s, W, H, images, drive:{mode:drive}, demo:DEMO, sh:[VS_PTS, FS_PTS, VS_FULL, FS_FULL, FS_TEX], alt: tr(images.length >= 2 ? `Animacja: sekwencja, ${photos(images.length)}` : 'Animacja z kropek')};
+  const framer = o.format === 'framer', bgMode = !framer && o.embed === 'bg';
+  const sel = drive === 'sections' ? normSel(o.sections).list : [];
+  const cfg = {S:s, W, H, images, drive:{mode:drive, sel}, fill:framer || bgMode, demo:DEMO, sh:[VS_PTS, FS_PTS, VS_FULL, FS_FULL, FS_TEX], alt: tr(images.length >= 2 ? `Animacja: sekwencja, ${photos(images.length)}` : 'Animacja z kropek')};
   const engine = Object.entries(ENGINE).map(([n, f]) => `var ${n} = ${f.toString()};`).join('\n  ');
   const lib = m3 ? `var LIB3D = ${window.STANCZYK3D_LIB.toString()};` : 'var LIB3D = null;';
   const player = stanczykPlayer.toString().replace('/*LIB3D*/', () => lib).replace('/*ENGINE*/', () => engine).replace(/<\/script/gi, '<\\/script');
   const json = JSON.stringify(cfg).replace(/<\//g, '<\\/');
   const what = images.length >= 2 ? `sekwencja: ${photos(images.length)}, przejście ${((SEQ_TYPES.find(t => t[0] === S.seqType) || [, S.seqType])[1]).toLowerCase()}` : m3 ? 'bryła 3D' : 'jedno zdjęcie';
+  if (framer) return framerComponent(player, json, what, images.length, sel, drive);
+  if (bgMode) return `<!-- ${L(`Stańczyk: animacja jako tło (${what}). Wklej jako pierwszy element kontenera z position:relative (np. sekcji). Animacja wypełni kontener i nie przechwytuje myszy: przyciski i linki nad nią działają, kursor strony zostaje, a kropki dalej reagują na kursor. Treści nad animacją daj position:relative; z-index:1.`, `Stańczyk: animation as a background (${what}). Paste it as the first element of a container with position:relative (e.g. a section). It fills the container and does not capture the mouse: buttons and links above it work, the page cursor stays, and the dots still react to the cursor. Give content above it position:relative; z-index:1.`)} -->
+${driveHelp(drive, images.length, sel)}<div class="stanczyk" data-stanczyk-name="stanczyk" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:hidden;background:${S.bg};z-index:0"></div>
+<script>
+(${player})(document.currentScript.previousElementSibling, ${json});
+</` + `script>`;
   return `<!-- ${tr(`Stańczyk: animacja (${what}). Wklej w miejscu strony, gdzie ma się pojawić; szerokość dopasuje się do kontenera.`)} -->
-${driveHelp(drive, images.length)}<div class="stanczyk" data-stanczyk-name="stanczyk" style="position:relative;width:100%;aspect-ratio:${W} / ${H};background:${S.bg};overflow:hidden"></div>
+${driveHelp(drive, images.length, sel)}<div class="stanczyk" data-stanczyk-name="stanczyk" style="position:relative;width:100%;aspect-ratio:${W} / ${H};background:${S.bg};overflow:hidden"></div>
 <script>
 (${player})(document.currentScript.previousElementSibling, ${json});
 </` + `script>`;
 }
-let exOpts = {mouse:true, imgMax:1000, res:1080, drive:null}, exT = 0;
+let exOpts = {mouse:true, imgMax:1000, res:1080, drive:null, format:'html', embed:'block', sections:''}, exT = 0;
+// „oferta” → „#oferta”; pełne selektory zostają; zwraca listę albo null, gdy któryś selektor jest błędny
+function normSel(str){ const list = String(str || '').split(/[,\n]+/).map(x => x.trim()).filter(Boolean).map(x => /^[A-Za-z][\w-]*$/.test(x) ? '#' + x : x);
+  for (const q of list) { try { document.createDocumentFragment().querySelector(q); } catch (e) { return {list, bad:q}; } } return {list, bad:null}; }
 function refreshExport(){
   const items = exportItems(), ok = exportOk();
   $('#exInfo').textContent = tr(ok
@@ -2453,6 +2553,16 @@ function refreshExport(){
     : seqActive() ? 'W sekwencji jest za mało elementów do eksportu: wideo nie trafia do kodu na stronę. Dodaj zdjęcia albo bryły 3D.'
     : 'Eksport działa ze zdjęciem, bryłą 3D albo sekwencją. Bieżące źródło to wideo: nagraj je przyciskiem „Nagraj wideo” albo dodaj zdjęcia do sekwencji.');
   const seqOk = ok && seqActive() && items.length >= 2; $('#exDriveRow').hidden = !seqOk;
+  $('#exEmbed').hidden = exOpts.format === 'framer';
+  $('#exSecRow').hidden = !(seqOk && exOpts.drive === 'sections');
+  { const ns = normSel(exOpts.sections), hint = $('#exSecHint'), n = items.length; let msg = '';
+    if (ns.bad) msg = L(`Błędny selektor: ${ns.bad}`, `Invalid selector: ${ns.bad}`);
+    else if (ns.list.length > n) msg = L(`Podano ${ns.list.length} sekcji, a sekwencja ma ${n} elementy — nadmiarowe sekcje nic nie zmienią.`, `${ns.list.length} sections given but the sequence has ${n} items — extra sections do nothing.`);
+    else if (ns.list.length && ns.list.length < n) { const r = ns.list.length + 1 === n ? String(n) : `${ns.list.length + 1}–${n}`, one = ns.list.length + 1 === n;
+      msg = L(`${one ? 'Element' : 'Elementy'} ${r} ${one ? 'nie ma' : 'nie mają'} sekcji: pokażesz ${one ? 'go' : 'je'} tylko z kodu (goTo).`, `Item${one ? '' : 's'} ${r} ${one ? 'has' : 'have'} no section: you can show ${one ? 'it' : 'them'} only from code (goTo).`); }
+    hint.textContent = msg; $('#exSecRow').classList.toggle('error', !!ns.bad); $('#exSections').setAttribute('aria-invalid', String(!!ns.bad)); }
+  if (ok && exOpts.format === 'framer') $('#exInfo').textContent += ' ' + L('Komponent Framera działa w dokumencie strony, a nie w ramce jak Embed: kursor Framera zostaje widoczny nad animacją, a włączona opcja „Tło” przepuszcza mysz do warstw pod spodem.', 'The Framer component runs in the page document, not in a frame like Embed: the Framer cursor stays visible over the animation, and the “Background” option lets the mouse through to layers below.');
+  else if (ok && exOpts.embed === 'bg') $('#exInfo').textContent += ' ' + L('Jako tło animacja wypełnia kontener i przepuszcza mysz: linki nad nią działają, a kropki dalej reagują na kursor. Uwaga: we Framerze Embed zawsze zamyka kod w ramce — tam wybierz „Komponent Framera”.', 'As a background the animation fills its container and lets the mouse through: links above it work and the dots still react to the cursor. Note: in Framer, Embed always wraps code in a frame — choose “Framer component” there.');
   if (seqOk && exOpts.drive !== 'auto') $('#exInfo').textContent += ' ' + (exOpts.drive === 'sections'
     ? L('Na stronie element zmieni się, gdy sekcja z atrybutem data-stanczyk-step dojdzie do środka ekranu (instrukcja jest na początku kodu).', 'On the page the item changes when a section with data-stanczyk-step reaches the middle of the screen (instructions are at the top of the code).')
     : L('Na stronie elementy zmienia Twój skrypt: goTo(n), next(), prev() (instrukcja jest na początku kodu).', 'On the page your script changes items: goTo(n), next(), prev() (instructions are at the top of the code).'));
@@ -2462,6 +2572,7 @@ function refreshExport(){
   if (!ok) return;
   const code = buildExport(exOpts);
   $('#exCode').value = code;
+  $('#exFile').lastChild.textContent = exOpts.format === 'framer' ? L('Pobierz plik .tsx', 'Download .tsx file') : tr('Pobierz plik HTML');
   $('#exSize').textContent = tr(`Rozmiar kodu: ${nf.format(Math.round(code.length / 1024))} KB (${exportItems().some(it => it.type === '3d') ? 'w tym biblioteka 3D' : 'w tym zdjęcia'}). Wklej go w blok „Embed” / „HTML” na swojej stronie.`);
 }
 // Okna dialogowe: fokus wchodzi do okna, Tab/Shift+Tab krąży w nim, po zamknięciu wraca na przycisk, który je otworzył
@@ -2478,7 +2589,7 @@ document.addEventListener('keydown', e => {
 }, true);
 function openExport(){
   if (!exOpts.drive) exOpts.drive = S.seqMode === 'trigger' ? 'sections' : 'auto';
-  $('#exMouse').selected = exOpts.mouse; $('#exImg').value = String(exOpts.imgMax); $('#exRes').value = String(exOpts.res); $('#exDrive').value = exOpts.drive;
+  $('#exMouse').selected = exOpts.mouse; $('#exImg').value = String(exOpts.imgMax); $('#exRes').value = String(exOpts.res); $('#exDrive').value = exOpts.drive; $('#exFormat').value = exOpts.format; $('#exSections').value = exOpts.sections; $('#exEmbed').value = exOpts.embed;
   $('#exScrim').hidden = false; refreshExport(); dialogOpen($('#exScrim'));
 }
 function closeExport(){ if ($('#exScrim').hidden) return; $('#exScrim').hidden = true; $('#exCode').value = ''; dialogClose($('#exScrim')); }
@@ -2491,17 +2602,24 @@ $('#exMouse').addEventListener('change', () => { exOpts.mouse = $('#exMouse').se
 $('#exImg').addEventListener('change', () => { exOpts.imgMax = +$('#exImg').value; exChanged(); });
 $('#exRes').addEventListener('change', () => { exOpts.res = +$('#exRes').value; exChanged(); });
 $('#exDrive').addEventListener('change', () => { exOpts.drive = $('#exDrive').value; exChanged(); });
+$('#exFormat').addEventListener('change', () => { exOpts.format = $('#exFormat').value; exChanged(); });
+$('#exEmbed').addEventListener('change', () => { exOpts.embed = $('#exEmbed').value; exChanged(); });
+$('#exSections').addEventListener('input', () => { exOpts.sections = $('#exSections').value; exChanged(); });
+$('#exSections').addEventListener('keydown', e => e.stopPropagation());
 $('#exCopy').addEventListener('click', () => {
   const ta = $('#exCode');
   const fallback = () => { ta.focus(); ta.select(); toast('Kod jest zaznaczony. Skopiuj go skrótem ⌘C / Ctrl+C.'); };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(() => toast('Skopiowano kod. Wklej go na swojej stronie.'), fallback); else fallback();
 });
 $('#exFile').addEventListener('click', () => {
+  if (exOpts.format === 'framer') { saveOut(new Blob([$('#exCode').value], {type:'text/plain'}), 'Stanczyk.tsx'); return; }
   const n = exportItems().length, drive = seqActive() && n >= 2 ? exOpts.drive : 'auto', ink = lum3(hex(S.bg)) < 0.5 ? '#ECEAE4' : '#141414';
   let body = `<main>\n${$('#exCode').value}\n</main>`, css = `html,body{margin:0;background:${S.bg};color:${ink};font:16px/1.5 system-ui,sans-serif}main{max-width:1080px;margin:0 auto}`;
   if (drive === 'sections') {
     css += `.wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;max-width:1200px;margin:0 auto;padding:0 24px}.pin{position:sticky;top:10vh;height:80vh;display:flex;align-items:center}.pin>.stanczyk{width:100%}section{min-height:100vh;display:flex;align-items:center}section h2{font-size:32px;margin:0 0 8px}@media(max-width:800px){.wrap{grid-template-columns:1fr}.pin{top:0;height:auto;z-index:1;background:${S.bg}}section{min-height:80vh}}`;
-    const secs = Array.from({length:n}, (_, i) => `  <section data-stanczyk-step="${i + 1}"><div><h2>${L('Element', 'Item')} ${i + 1}</h2><p>${L(i < n - 1 ? 'Przewiń dalej, aby zobaczyć kolejny element.' : 'To ostatni element sekwencji.', i < n - 1 ? 'Scroll on to see the next item.' : 'This is the last item of the sequence.')}</p></div></section>`).join('\n');
+    const sl = normSel(exOpts.sections).list;
+    const attr = i => { const q = sl[i]; if (!q) return sl.length ? '' : ` data-stanczyk-step="${i + 1}"`; if (/^#[\w-]+$/.test(q)) return ` id="${q.slice(1)}"`; if (/^\.[\w-]+$/.test(q)) return ` class="${q.slice(1)}"`; return ` data-stanczyk-step="${i + 1}"`; };
+    const secs = Array.from({length:n}, (_, i) => `  <section${attr(i)}><div><h2>${L('Element', 'Item')} ${i + 1}</h2><p>${L(i < n - 1 ? 'Przewiń dalej, aby zobaczyć kolejny element.' : 'To ostatni element sekwencji.', i < n - 1 ? 'Scroll on to see the next item.' : 'This is the last item of the sequence.')}</p></div></section>`).join('\n');
     body = `<div class="wrap">\n<div class="pin">\n${$('#exCode').value}\n</div>\n<div>\n${secs}\n</div>\n</div>`;
   } else if (drive === 'api') {
     css += `.ctl{display:flex;gap:12px;justify-content:center;align-items:center;padding:16px}.ctl button{font:inherit;padding:8px 16px;border-radius:20px;border:1px solid currentColor;background:none;color:inherit;cursor:pointer}`;
