@@ -163,6 +163,9 @@ window.STANCZYK_EN = {
   'Osadzenie': 'Placement', 'W treści strony': 'In page content', 'Jako tło (mysz przechodzi dalej)': 'As a background (mouse passes through)',
   'Sekcje strony (po kolei: element 1, 2, …)': 'Page sections (in order: item 1, 2, …)',
   'ID sekcji (np. oferta albo #oferta) lub selektor CSS (.sekcja-oferta). Puste pole = sekcje z atrybutem data-stanczyk-step.': 'Section ID (e.g. offer or #offer) or a CSS selector (.offer-section). Empty = sections with the data-stanczyk-step attribute.',
+  'Odtwarzacz w pliku + obrazy (.zip)': 'Player file + images (.zip)', 'Jeden blok HTML (wszystko w kodzie)': 'Single HTML block (everything inline)',
+  'Adres folderu na serwerze (gdzie wgrasz pliki z paczki)': 'Server folder URL (where you upload the package files)',
+  'Puste pole = pliki w tym samym folderze co strona. Kod do wklejenia jest krótki (mieści się m.in. w limicie Webflow), a jeden odtwarzacz obsłuży wszystkie animacje na stronie.': 'Empty = files in the same folder as the page. The code to paste is short (fits e.g. the Webflow limit), and one player serves all animations on the page.',
   // pliki, komunikaty
   'Zapisano {0}': 'Saved {0}',
   'Wczytano model „{0}”.': 'Loaded model “{0}”.',

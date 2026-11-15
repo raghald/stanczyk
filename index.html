@@ -392,7 +392,8 @@ md-filter-chip[selected]:active{--md-filter-chip-selected-container-color:var(--
       </div>
       <div class="drow">
         <md-outlined-select id="exFormat" label="Format kodu">
-          <md-select-option value="html" selected><div slot="headline">HTML (Embed, dowolna strona)</div></md-select-option>
+          <md-select-option value="package" selected><div slot="headline">Odtwarzacz w pliku + obrazy (.zip)</div></md-select-option>
+          <md-select-option value="html"><div slot="headline">Jeden blok HTML (wszystko w kodzie)</div></md-select-option>
           <md-select-option value="framer"><div slot="headline">Komponent Framera (.tsx)</div></md-select-option>
         </md-outlined-select>
         <md-outlined-select id="exEmbed" label="Osadzenie">
@@ -400,6 +401,7 @@ md-filter-chip[selected]:active{--md-filter-chip-selected-container-color:var(--
           <md-select-option value="bg"><div slot="headline">Jako tło (mysz przechodzi dalej)</div></md-select-option>
         </md-outlined-select>
       </div>
+      <label class="tfield" id="exBaseRow"><span>Adres folderu na serwerze (gdzie wgrasz pliki z paczki)</span><input id="exBase" type="url" spellcheck="false" autocomplete="off" placeholder="https://twojastrona.pl/stanczyk/"><small class="sec-note">Puste pole = pliki w tym samym folderze co strona. Kod do wklejenia jest krótki (mieści się m.in. w limicie Webflow), a jeden odtwarzacz obsłuży wszystkie animacje na stronie.</small></label>
       <div id="exDriveRow" class="dopts">
         <md-outlined-select id="exDrive" label="Zmiana elementów sekwencji">
           <md-select-option value="auto"><div slot="headline">Po czasie</div></md-select-option>
@@ -2408,7 +2410,7 @@ function stanczykPlayer(root, CFG){
       off.push(() => { removeEventListener('pointermove', pt); removeEventListener('pointerdown', pt); document.removeEventListener('pointerout', out); });
     }
   }
-  const L3 = LIB3D ? LIB3D() : null;
+  const L3 = LIB3D ? (window.__stanczyk3d || (window.__stanczyk3d = LIB3D())) : null;
   const make3D = d => new Promise(res => { const m3 = L3.create(), it = {el:m3.canvas, type:'3d', live:true, w:d.w, h:d.h, pos:d.p, m3, p3:d.p3, fr:0, ver:-1};
     m3.setSize(d.w, d.h); const ok = () => res(it);
     if (d.model) fetch(d.model.data).then(r => r.arrayBuffer()).then(b => m3.setModel(b, d.model.ext)).then(ok, ok); else ok(); });
@@ -2540,10 +2542,125 @@ ${driveHelp(drive, images.length, sel)}<div class="stanczyk" data-stanczyk-name=
 (${player})(document.currentScript.previousElementSibling, ${json});
 </` + `script>`;
 }
-let exOpts = {mouse:true, imgMax:1000, res:1080, drive:null, format:'html', embed:'block', sections:''}, exT = 0;
+let exOpts = {mouse:true, imgMax:1000, res:1080, drive:null, format:'package', embed:'block', sections:'', base:''}, exT = 0;
 // „oferta” → „#oferta”; pełne selektory zostają; zwraca listę albo null, gdy któryś selektor jest błędny
 function normSel(str){ const list = String(str || '').split(/[,\n]+/).map(x => x.trim()).filter(Boolean).map(x => /^[A-Za-z][\w-]*$/.test(x) ? '#' + x : x);
   for (const q of list) { try { document.createDocumentFragment().querySelector(q); } catch (e) { return {list, bad:q}; } } return {list, bad:null}; }
+/* ================= Odtwarzacz jako plik: stanczyk-player.js + obrazy (paczka .zip) ================= */
+const PLAYER_FORMAT = 1; // wersja formatu konfiguracji; odtwarzacz z tym numerem odczyta każdą animację wyeksportowaną w tym formacie
+function playerScript(){
+  const engine = Object.entries(ENGINE).map(([n, f]) => `var ${n} = ${f.toString()};`).join('\n  ');
+  const player = stanczykPlayer.toString().replace('/*LIB3D*/', () => 'var LIB3D = window.STANCZYK3D_LIB || null;').replace('/*ENGINE*/', () => engine);
+  return `/*! Stańczyk — odtwarzacz animacji (format ${PLAYER_FORMAT}) · GPL-3.0 · https://github.com/raghald/stanczyk */
+(function(){
+'use strict';
+if (window.Stanczyk && window.Stanczyk.format === ${PLAYER_FORMAT}) { window.Stanczyk.scan(); return; }
+var SH = ${JSON.stringify([VS_PTS, FS_PTS, VS_FULL, FS_FULL, FS_TEX])};
+var stanczykPlayer = ${player};
+var me = document.currentScript, base = me && me.src ? me.src.replace(/[^/]*([?#].*)?$/, '') : '';
+var lib3d = null;
+function need3D(cfg){ return (cfg.images || []).some(function(d){ return d.k === '3d'; }); }
+// biblioteka 3D (three.js) ładuje się tylko dla animacji z bryłami, z tego samego folderu co odtwarzacz
+function load3D(){ if (window.STANCZYK3D_LIB) return Promise.resolve(); return lib3d || (lib3d = new Promise(function(res, rej){ var s = document.createElement('script'); s.src = (me && me.getAttribute('data-3d')) || base + 'stanczyk-3d.js'; s.onload = res; s.onerror = function(){ lib3d = null; rej(new Error('stanczyk-3d.js')); }; document.head.appendChild(s); })); }
+function init(el){
+  if (el.__stanczykInit) return; el.__stanczykInit = true;
+  var node = el.querySelector('script[type="application/json"]'), src = el.getAttribute('data-stanczyk-src');
+  var cfgP = node ? Promise.resolve(JSON.parse(node.textContent)) : src ? fetch(src).then(function(r){ return r.json(); }) : null;
+  if (!cfgP) return;
+  cfgP.then(function(cfg){ cfg.sh = SH; return (need3D(cfg) ? load3D() : Promise.resolve()).then(function(){ el.__stanczykStop = stanczykPlayer(el, cfg); }); })
+    .catch(function(e){ if (window.console) console.warn('Stańczyk: nie udało się uruchomić animacji', e); });
+}
+function scan(){ var list = document.querySelectorAll('[data-stanczyk-player]'); for (var i = 0; i < list.length; i++) init(list[i]); }
+function destroy(el){ if (el && el.__stanczykStop) { el.__stanczykStop(); el.__stanczykStop = null; el.__stanczykInit = false; } }
+window.Stanczyk = {format:${PLAYER_FORMAT}, init:init, scan:scan, destroy:destroy};
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scan); else scan();
+})();
+`;
+}
+// Archiwum ZIP bez kompresji (obrazy JPG i tak są skompresowane) — bez zewnętrznych bibliotek
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+function makeZip(files){
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  const d = new Date(), dt = ((d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)) & 0xFFFF, dd = (((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()) & 0xFFFF;
+  for (const f of files) {
+    const name = enc.encode(f.name), data = typeof f.data === 'string' ? enc.encode(f.data) : f.data, crc = crc32(data);
+    const h = new DataView(new ArrayBuffer(30)); h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true); h.setUint16(10, dt, true); h.setUint16(12, dd, true);
+    h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true); h.setUint16(26, name.length, true); h.setUint16(28, 0, true);
+    parts.push(new Uint8Array(h.buffer), name, data);
+    const c = new DataView(new ArrayBuffer(46)); c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true); c.setUint16(12, dt, true); c.setUint16(14, dd, true);
+    c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true); c.setUint16(28, name.length, true); c.setUint32(42, off, true);
+    central.push(new Uint8Array(c.buffer), name); off += 30 + name.length + data.length;
+  }
+  const csize = central.reduce((a, b) => a + b.length, 0), e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, csize, true); e.setUint32(16, off, true);
+  return new Blob([...parts, ...central, new Uint8Array(e.buffer)], {type:'application/zip'});
+}
+const dataURLBytes = u => { const b = atob(u.split(',')[1] || ''), a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; };
+const canvasJPEG = c => new Promise(r => c.toBlob(b => b.arrayBuffer().then(x => r(new Uint8Array(x))), 'image/jpeg', 0.86));
+// Paczka: krótki kod do wklejenia + pliki do wgrania na serwer (odtwarzacz, biblioteka 3D, obrazy, modele, przykład, instrukcja)
+async function buildPackage(o){
+  const items = exportItems(), files = [];
+  let base = (o.base || '').trim(); if (base && !base.endsWith('/')) base += '/';
+  const images = [];
+  for (const [i, it] of items.entries()) {
+    const nr = String(i + 1).padStart(2, '0');
+    if (it.type === '3d') { const single = it === src, P = single ? S : it.p3, mo = single ? m3model : it.model; let model = null;
+      if (P.m3shape === 'model' && mo) { const fn = `stanczyk-model-${nr}.${mo.ext}`; files.push({name:fn, data:dataURLBytes(mo.data)}); model = {ext:mo.ext, data:base + fn}; }
+      images.push({k:'3d', w:it.w, h:it.h, p:it.pos || {x:0, y:0, z:1}, p3:single ? null : {...it.p3}, model}); continue; }
+    const k = Math.min(1, o.imgMax / Math.max(it.w, it.h)), c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(it.w * k)); c.height = Math.max(1, Math.round(it.h * k)); c.getContext('2d').drawImage(it.el, 0, 0, c.width, c.height);
+    const fn = `stanczyk-obraz-${nr}.jpg`; files.push({name:fn, data:await canvasJPEG(c)}); images.push({u:base + fn, p:it.pos || {x:0, y:0, z:1}});
+  }
+  const m3 = images.some(d => d.k === '3d');
+  const s = {...S, res:o.res, seqOn:images.length >= 2}, drive = images.length >= 2 ? o.drive : 'auto';
+  s.seqMode = drive === 'auto' ? 'auto' : 'trigger'; s.mouse = o.mouse ? (S.mouse === 'off' ? 'repel' : S.mouse) : 'off';
+  const bgMode = o.embed === 'bg', sel = drive === 'sections' ? normSel(o.sections).list : [];
+  const cfg = {format:PLAYER_FORMAT, S:s, W, H, images, drive:{mode:drive, sel}, fill:bgMode, demo:DEMO, alt:tr(images.length >= 2 ? `Animacja: sekwencja, ${photos(images.length)}` : 'Animacja z kropek')};
+  const json = JSON.stringify(cfg).replace(/<\//g, '<\\/');
+  const playerSrc = base + 'stanczyk-player.js';
+  files.unshift({name:'stanczyk-player.js', data:playerScript()});
+  if (m3) files.splice(1, 0, {name:'stanczyk-3d.js', data:`/*! Stańczyk — biblioteka 3D: three.js (MIT) i krój Droid Sans (Apache-2.0) */\nwindow.STANCZYK3D_LIB = ${window.STANCZYK3D_LIB.toString()};\n`});
+  const what = images.length >= 2 ? `sekwencja: ${photos(images.length)}` : m3 ? 'bryła 3D' : 'jedno zdjęcie';
+  const style = bgMode ? `position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:hidden;background:${S.bg};z-index:0` : `position:relative;width:100%;aspect-ratio:${W} / ${H};background:${S.bg};overflow:hidden`;
+  const head = L(`Stańczyk: animacja (${what}). Pliki z paczki .zip wgraj ${base ? 'pod adres ' + base : 'do tego samego folderu co strona'}. Kilka animacji na stronie korzysta z jednego odtwarzacza — linijkę <script> wystarczy wkleić raz.`,
+    `Stańczyk: animation (${what}). Upload the files from the .zip ${base ? 'to ' + base : 'to the same folder as the page'}. Several animations on a page share one player — the <script> line is needed once.`)
+    + (bgMode ? ' ' + L('Jako tło: wklej jako pierwszy element kontenera z position:relative; treść nad animacją dostaje position:relative; z-index:1.', 'As a background: paste as the first element of a container with position:relative; give content above it position:relative; z-index:1.') : '');
+  const snippet = `<!-- ${head} -->\n${driveHelp(drive, images.length, sel)}<div class="stanczyk" data-stanczyk-player data-stanczyk-name="stanczyk"${bgMode ? ' aria-hidden="true"' : ''} style="${style}">\n<script type="application/json">${json}</` + `script>\n</div>\n<script src="${playerSrc}" defer></` + `script>`;
+  // przykład działa od razu po rozpakowaniu (względne ścieżki)
+  const local = base ? snippet.split(base).join('') : snippet;
+  files.push({name:'przyklad.html', data:`<!doctype html>\n<html lang="${lang}">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>${tr('Stańczyk — animacja')}</title>\n<style>html,body{margin:0;background:${S.bg}}main{max-width:1080px;margin:0 auto${bgMode ? ';position:relative;height:100vh' : ''}}</style>\n</head>\n<body>\n<main>\n${local}\n</main>\n</body>\n</html>\n`});
+  files.push({name:L('INSTRUKCJA.txt', 'README.txt'), data:L(
+`Stańczyk — animacja na stronę
+
+1. Wgraj wszystkie pliki z tej paczki ${base ? 'pod adres: ' + base : 'do jednego folderu na serwerze strony'}.
+   WordPress: Media → Dodaj (albo przez FTP do wp-content/uploads/stanczyk/). Webflow: obrazy jako Assets, a pliki .js na własny serwer albo CDN.
+2. Wklej kod z okna „Kod na stronę” w miejscu strony, gdzie ma być animacja (blok HTML / Custom Code / Embed).
+   Kod musi trafić bezpośrednio do strony — w ramce (iframe) animacja nie widzi sekcji strony ani nie przepuszcza myszy.
+3. Kilka animacji na jednej stronie: wklej kolejne bloki <div class="stanczyk" …>; linijka <script src=".../stanczyk-player.js"> wystarczy raz.
+
+Pliki:
+${files.map(f => '  ' + f.name).join('\n')}
+  przyklad.html — strona testowa (otwórz po rozpakowaniu)
+
+Odtwarzacz: GPL-3.0, https://github.com/raghald/stanczyk
+`,
+`Stańczyk — animation for the web
+
+1. Upload all files from this package ${base ? 'to: ' + base : 'to one folder on your website server'}.
+2. Paste the code from “Web embed code” where the animation should appear (HTML block / Custom Code / Embed).
+   The code must go directly into the page — inside a frame (iframe) the animation cannot see page sections or let the mouse through.
+3. Several animations on one page: paste more <div class="stanczyk" …> blocks; the <script src=".../stanczyk-player.js"> line is needed once.
+
+Files:
+${files.map(f => '  ' + f.name).join('\n')}
+  przyklad.html — test page (open after unzipping)
+
+Player: GPL-3.0, https://github.com/raghald/stanczyk
+`)});
+  return {snippet, files, size:files.reduce((a, f) => a + (typeof f.data === 'string' ? f.data.length : f.data.length), 0)};
+}
+let exPkg = null, exPkgT = 0;
 function refreshExport(){
   const items = exportItems(), ok = exportOk();
   $('#exInfo').textContent = tr(ok
@@ -2554,6 +2671,7 @@ function refreshExport(){
     : 'Eksport działa ze zdjęciem, bryłą 3D albo sekwencją. Bieżące źródło to wideo: nagraj je przyciskiem „Nagraj wideo” albo dodaj zdjęcia do sekwencji.');
   const seqOk = ok && seqActive() && items.length >= 2; $('#exDriveRow').hidden = !seqOk;
   $('#exEmbed').hidden = exOpts.format === 'framer';
+  $('#exBaseRow').hidden = !(ok && exOpts.format === 'package');
   $('#exSecRow').hidden = !(seqOk && exOpts.drive === 'sections');
   { const ns = normSel(exOpts.sections), hint = $('#exSecHint'), n = items.length; let msg = '';
     if (ns.bad) msg = L(`Błędny selektor: ${ns.bad}`, `Invalid selector: ${ns.bad}`);
@@ -2561,6 +2679,7 @@ function refreshExport(){
     else if (ns.list.length && ns.list.length < n) { const r = ns.list.length + 1 === n ? String(n) : `${ns.list.length + 1}–${n}`, one = ns.list.length + 1 === n;
       msg = L(`${one ? 'Element' : 'Elementy'} ${r} ${one ? 'nie ma' : 'nie mają'} sekcji: pokażesz ${one ? 'go' : 'je'} tylko z kodu (goTo).`, `Item${one ? '' : 's'} ${r} ${one ? 'has' : 'have'} no section: you can show ${one ? 'it' : 'them'} only from code (goTo).`); }
     hint.textContent = msg; $('#exSecRow').classList.toggle('error', !!ns.bad); $('#exSections').setAttribute('aria-invalid', String(!!ns.bad)); }
+  if (ok && exOpts.format === 'package') $('#exInfo').textContent += ' ' + L('Odtwarzacz i obrazy są w osobnych plikach (paczka .zip): wgraj je na serwer, a na stronę wklej krótki kod poniżej. Przeglądarka zapamięta odtwarzacz między stronami.', 'The player and images are separate files (.zip package): upload them to your server and paste the short code below into the page. The browser caches the player across pages.');
   if (ok && exOpts.format === 'framer') $('#exInfo').textContent += ' ' + L('Komponent Framera działa w dokumencie strony, a nie w ramce jak Embed: kursor Framera zostaje widoczny nad animacją, a włączona opcja „Tło” przepuszcza mysz do warstw pod spodem.', 'The Framer component runs in the page document, not in a frame like Embed: the Framer cursor stays visible over the animation, and the “Background” option lets the mouse through to layers below.');
   else if (ok && exOpts.embed === 'bg') $('#exInfo').textContent += ' ' + L('Jako tło animacja wypełnia kontener i przepuszcza mysz: linki nad nią działają, a kropki dalej reagują na kursor. Uwaga: we Framerze Embed zawsze zamyka kod w ramce — tam wybierz „Komponent Framera”.', 'As a background the animation fills its container and lets the mouse through: links above it work and the dots still react to the cursor. Note: in Framer, Embed always wraps code in a frame — choose “Framer component” there.');
   if (seqOk && exOpts.drive !== 'auto') $('#exInfo').textContent += ' ' + (exOpts.drive === 'sections'
@@ -2570,6 +2689,13 @@ function refreshExport(){
   $('#exOpts').hidden = $('#exCode').hidden = $('#exSize').hidden = !ok;
   $('#exCopy').disabled = $('#exFile').disabled = !ok;
   if (!ok) return;
+  if (exOpts.format === 'package') {
+    const tok = ++exPkgT; $('#exFile').lastChild.textContent = L('Pobierz paczkę .zip', 'Download .zip package');
+    buildPackage(exOpts).then(pk => { if (tok !== exPkgT) return; exPkg = pk; $('#exCode').value = pk.snippet;
+      $('#exSize').textContent = L(`Kod do wklejenia: ${nf.format(Math.max(1, Math.round(pk.snippet.length / 1024)))} KB · paczka: ${nf.format(Math.round(pk.size / 1024))} KB (${pk.files.length} plików). Wklej kod w blok „Embed” / „HTML”, a pliki wgraj na serwer.`,
+        `Code to paste: ${nf.format(Math.max(1, Math.round(pk.snippet.length / 1024)))} KB · package: ${nf.format(Math.round(pk.size / 1024))} KB (${pk.files.length} files). Paste the code into an “Embed” / “HTML” block and upload the files to your server.`); });
+    return;
+  }
   const code = buildExport(exOpts);
   $('#exCode').value = code;
   $('#exFile').lastChild.textContent = exOpts.format === 'framer' ? L('Pobierz plik .tsx', 'Download .tsx file') : tr('Pobierz plik HTML');
@@ -2589,7 +2715,7 @@ document.addEventListener('keydown', e => {
 }, true);
 function openExport(){
   if (!exOpts.drive) exOpts.drive = S.seqMode === 'trigger' ? 'sections' : 'auto';
-  $('#exMouse').selected = exOpts.mouse; $('#exImg').value = String(exOpts.imgMax); $('#exRes').value = String(exOpts.res); $('#exDrive').value = exOpts.drive; $('#exFormat').value = exOpts.format; $('#exSections').value = exOpts.sections; $('#exEmbed').value = exOpts.embed;
+  $('#exMouse').selected = exOpts.mouse; $('#exImg').value = String(exOpts.imgMax); $('#exRes').value = String(exOpts.res); $('#exDrive').value = exOpts.drive; $('#exFormat').value = exOpts.format; $('#exSections').value = exOpts.sections; $('#exBase').value = exOpts.base; $('#exEmbed').value = exOpts.embed;
   $('#exScrim').hidden = false; refreshExport(); dialogOpen($('#exScrim'));
 }
 function closeExport(){ if ($('#exScrim').hidden) return; $('#exScrim').hidden = true; $('#exCode').value = ''; dialogClose($('#exScrim')); }
@@ -2605,6 +2731,8 @@ $('#exDrive').addEventListener('change', () => { exOpts.drive = $('#exDrive').va
 $('#exFormat').addEventListener('change', () => { exOpts.format = $('#exFormat').value; exChanged(); });
 $('#exEmbed').addEventListener('change', () => { exOpts.embed = $('#exEmbed').value; exChanged(); });
 $('#exSections').addEventListener('input', () => { exOpts.sections = $('#exSections').value; exChanged(); });
+$('#exBase').addEventListener('input', () => { exOpts.base = $('#exBase').value; exChanged(); });
+$('#exBase').addEventListener('keydown', e => e.stopPropagation());
 $('#exSections').addEventListener('keydown', e => e.stopPropagation());
 $('#exCopy').addEventListener('click', () => {
   const ta = $('#exCode');
@@ -2613,6 +2741,7 @@ $('#exCopy').addEventListener('click', () => {
 });
 $('#exFile').addEventListener('click', () => {
   if (exOpts.format === 'framer') { saveOut(new Blob([$('#exCode').value], {type:'text/plain'}), 'Stanczyk.tsx'); return; }
+  if (exOpts.format === 'package') { if (exPkg) saveOut(makeZip(exPkg.files), `stanczyk-animacja-${stamp()}.zip`, `${exPkg.files.length} ${L('plików', 'files')}`); return; }
   const n = exportItems().length, drive = seqActive() && n >= 2 ? exOpts.drive : 'auto', ink = lum3(hex(S.bg)) < 0.5 ? '#ECEAE4' : '#141414';
   let body = `<main>\n${$('#exCode').value}\n</main>`, css = `html,body{margin:0;background:${S.bg};color:${ink};font:16px/1.5 system-ui,sans-serif}main{max-width:1080px;margin:0 auto}`;
   if (drive === 'sections') {
